@@ -3,12 +3,6 @@ from tkinter import ttk
 from math_classes import *
 
 
-countdown_id = None
-num_starting_probs = 50
-timer_duration = 5
-failed = False
-
-
 def make_window(window_size):
 
     window = tk.Tk()
@@ -22,27 +16,34 @@ def make_window(window_size):
     return window
 
 
-def question(window, probs):
+class Question:
 
-    global failed
-    global num_starting_probs
-    failed = False
-    prob = probs.get_prob()
-    global timer_duration
+    def __init__(self, window, probs):
+        self.window = window
+        self.probs = probs
+        self.countdown_id = None
+        self.failed = False
+        self.timer_duration = 5
+        self.clear_window()
+        self.make_layout()
 
-    for widget in window.winfo_children():
-        widget.destroy()
+    def clear_window(self):
+        for widget in self.window.winfo_children():
+            widget.destroy()
 
-    window.grid_rowconfigure(0, weight=5)
-    window.grid_rowconfigure(1, weight=1)
-    window.grid_rowconfigure(2, weight=1)
-    window.grid_columnconfigure(0, weight=5)
-    window.grid_columnconfigure(1, weight=1)
+    def make_layout(self):
+        self.window.grid_rowconfigure(0, weight=5)
+        self.window.grid_rowconfigure(1, weight=1)
+        self.window.grid_rowconfigure(2, weight=1)
+        self.window.grid_columnconfigure(0, weight=5)
+        self.window.grid_columnconfigure(1, weight=1)
 
-    question_frame = tk.Frame(window)
-    question_frame.grid(row=0, column=0, sticky="nsew")
-    label = ttk.Label(question_frame, text=prob.question, font=("Arial", 108))
-    label.place(relx=0.5, rely=0.5, anchor='center')
+    def make_question(self):
+        question_frame = tk.Frame(self.window)
+        question_frame.grid(row=0, column=0, sticky="nsew")
+        label = ttk.Label(
+            question_frame, text=self.prob.question, font=("Arial", 108))
+        label.place(relx=0.5, rely=0.5, anchor='center')
 
     def check_answer(_):
         if not entry.get():
