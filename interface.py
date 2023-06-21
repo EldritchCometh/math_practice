@@ -1,125 +1,55 @@
 import tkinter as tk
-from tkinter import ttk
-from math_classes import *
 
 
-def make_window(window_size):
+class FlashCardsWindow(tk.Tk):
 
-    window = tk.Tk()
-    window.title("Arithmetic Flashcards")
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-    x = (screen_width - window_size[0]) // 2
-    y = (screen_height - window_size[1]) // 2
-    window.geometry(f"{window_size[0]}x{window_size[1]}+{x}+{y}")
+    def __init__(self, window_width, window_height):
+        super().__init__()
+        self.window(window_width, window_height)
+        self.current_frame = tk.Frame(self)
+        self.new_frame = FrameOne(self)
+        self.switch_frame()
 
-    return window
+    def window(self, window_width, window_height):
+        self.title("Arithmetic Flashcards")
+        x = (self.winfo_screenwidth() - window_width) // 2
+        y = (self.winfo_screenheight() - window_height) // 2
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
+    def switch_frame(self):
+        if self.new_frame:
+            self.current_frame.destroy()
+            self.current_frame = self.new_frame
+            self.current_frame.pack(fill="both", expand=True)
+            self.new_frame = None
 
-class Question:
-
-    def __init__(self, window, probs):
-        self.window = window
-        self.probs = probs
-        self.countdown_id = None
-        self.failed = False
-        self.timer_duration = 5
-        self.clear_window()
-        self.make_layout()
-
-    def clear_window(self):
-        for widget in self.window.winfo_children():
-            widget.destroy()
-
-    def make_layout(self):
-        self.window.grid_rowconfigure(0, weight=5)
-        self.window.grid_rowconfigure(1, weight=1)
-        self.window.grid_rowconfigure(2, weight=1)
-        self.window.grid_columnconfigure(0, weight=5)
-        self.window.grid_columnconfigure(1, weight=1)
-
-    def make_question(self):
-        question_frame = tk.Frame(self.window)
-        question_frame.grid(row=0, column=0, sticky="nsew")
-        label = ttk.Label(
-            question_frame, text=self.prob.question, font=("Arial", 108))
-        label.place(relx=0.5, rely=0.5, anchor='center')
-
-    def check_answer(_):
-        if not entry.get():
-            print("no entry")
-            return
-        if int(entry.get().strip()) == prob.answer:
-            global failed
-            if not failed:
-                probs.rem_prob(prob)
-            if len(probs.probs) > 0:
-                question(window, probs)
-            else:
-                window.destroy()
-        else:
-            failed = True
-            if countdown_id:
-                window.after_cancel(countdown_id)
-            entry.delete(0, 'end')
-    entry_frame = tk.Frame(window)
-    entry_frame.grid(row=0, column=1, sticky="nsew")
-    entry = ttk.Entry(
-        entry_frame, justify="center", width=2, font=("Arial", 108))
-    entry.pack(fill="both", expand=True)
-    entry.bind("<Return>", check_answer)
-    entry.bind("<KP_Enter>", check_answer)
-    entry.focus_set()
-
-    def resize_fonts(_=None):
-        global window_size
-        if not window_size == (window.winfo_width(), window.winfo_height()):
-            window_size = (window.winfo_width(), window.winfo_height())
-            font_size = min(
-                int(window_size[0] * 0.11),
-                int(window_size[1] * 0.7))
-            label.config(font=("Arial", font_size))
-            entry.config(font=("Arial", font_size))
-    window.bind("<Configure>", resize_fonts)
-    window.after_idle(resize_fonts)
-
-    def timeout():
-        global failed
-        failed = True
-    def countdown(time_period, timer_bar):
-        if timer_bar.winfo_exists():
-            value = timer_bar['value']
-            if value > 0:
-                timer_bar['value'] = value - 1
-                global countdown_id
-                countdown_id = window.after(
-                    time_period, countdown, time_period, timer_bar)
-            else:
-                timeout()
-    timer_frame = tk.Frame(window)
-    timer_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
-    timer = ttk.Progressbar(
-        timer_frame, mode='determinate', maximum=100, value=100)
-    timer.pack(fill="both", expand=True)
-    countdown(timer_duration*10, timer)
-
-    prog_frame = tk.Frame(window)
-    prog_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
-    progress = ttk.Progressbar(
-        prog_frame,
-        mode='determinate',
-        maximum=num_starting_probs,
-        value=len(problems.probs)
-    )
-    progress.pack(fill="both", expand=True)
+        self.after(1, self.switch_frame)
 
 
-window_size = (1100, 200)
-window = make_window(window_size)
+class FrameOne(tk.Frame):
 
-add_probs = AdditionProblems(1, 10)
-sub_probs = SubtractionProblems(1, 10)
-problems = MathProblems(num_starting_probs, add_probs, sub_probs)
-question(window, problems)
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.button = tk.Button(self, text="Foo", command=self.switch)
+        self.button.pack()
+        self.parent = parent
 
-window.mainloop()
+    def switch(self):
+        self.parent.new_frame = FrameTwo(self.parent)
+
+
+class FrameTwo(tk.Frame):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.button = tk.Button(self, text="Bar", command=self.switch)
+        self.button.pack()
+        self.parent = parent
+
+    def switch(self):
+        self.parent.new_frame = FrameOne(self.parent)
+
+
+if __name__ == "__main__":
+    window = FlashCardsWindow(500, 300)
+    window.mainloop()
