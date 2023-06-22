@@ -32,9 +32,11 @@ class Problem(tk.Frame):
         self.make_progress_bar()
         self.last_window_size = (parent.winfo_width(), parent.winfo_height())
         self.bind("<Configure>", self.resize_fonts)
+        # see if I can pass parent to resize_fonts()
 
     def resize_fonts(self, _=None):
-        window_size = (self.parent.winfo_width(), self.parent.winfo_height())
+        parent = self.parent
+        window_size = (parent.winfo_width(), parent.winfo_height())
         if not window_size == self.last_window_size:
             self.last_window_size = window_size
             font_size = min(
@@ -56,10 +58,9 @@ class Problem(tk.Frame):
         entry = ttk.Entry(
             entry_frame, justify="center", width=2, font=("Arial", 108))
         entry.pack(fill="both", expand=True)
-        def on_entry(_=None):
-            self.parent.problem_entry(entry.get())
-        entry.bind("<Return>", on_entry)
-        entry.bind("<KP_Enter>", on_entry)
+        parent = self.parent
+        entry.bind("<Return>", lambda _: parent.problem_entry(entry.get()))
+        entry.bind("<KP_Enter>", lambda _: parent.problem_entry(entry.get()))
         entry.focus_set()
         return entry
 
