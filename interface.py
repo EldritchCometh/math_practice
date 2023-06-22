@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 
-class FlashCardsWindow(tk.Tk):
+class FlashCardsGame(tk.Tk):
 
     def __init__(self, window_width, window_height):
         super().__init__()
@@ -16,8 +16,8 @@ class FlashCardsWindow(tk.Tk):
         y = (self.winfo_screenheight() - window_height) // 2
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-    def clicked(self, flag):
-        pass
+    def problem_entry(self, entry):
+        print(entry)
 
 
 class Problem(tk.Frame):
@@ -32,9 +32,6 @@ class Problem(tk.Frame):
         self.make_progress_bar()
         self.last_window_size = (parent.winfo_width(), parent.winfo_height())
         self.bind("<Configure>", self.resize_fonts)
-
-    def check_answer(self, _=None):
-        print(self.entry.get())
 
     def resize_fonts(self, _=None):
         window_size = (self.parent.winfo_width(), self.parent.winfo_height())
@@ -59,8 +56,10 @@ class Problem(tk.Frame):
         entry = ttk.Entry(
             entry_frame, justify="center", width=2, font=("Arial", 108))
         entry.pack(fill="both", expand=True)
-        entry.bind("<Return>", self.check_answer)
-        entry.bind("<KP_Enter>", self.check_answer)
+        def on_entry(_=None):
+            self.parent.problem_entry(entry.get())
+        entry.bind("<Return>", on_entry)
+        entry.bind("<KP_Enter>", on_entry)
         entry.focus_set()
         return entry
 
@@ -86,5 +85,5 @@ class Problem(tk.Frame):
 
 if __name__ == "__main__":
 
-    window = FlashCardsWindow(1100, 200)
+    window = FlashCardsGame(1100, 200)
     window.mainloop()
