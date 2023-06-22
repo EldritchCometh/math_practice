@@ -6,9 +6,8 @@ class FlashCardsWindow(tk.Tk):
     def __init__(self, window_width, window_height):
         super().__init__()
         self.window(window_width, window_height)
-        self.current_frame = tk.Frame(self)
-        self.new_frame = FrameOne(self)
-        self.switch_frame()
+        self.current_frame = FrameOne(self)
+        self.current_frame.pack(fill="both", expand=True)
 
     def window(self, window_width, window_height):
         self.title("Arithmetic Flashcards")
@@ -16,38 +15,41 @@ class FlashCardsWindow(tk.Tk):
         y = (self.winfo_screenheight() - window_height) // 2
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-    def switch_frame(self):
-        if self.new_frame:
-            self.current_frame.destroy()
-            self.current_frame = self.new_frame
-            self.current_frame.pack(fill="both", expand=True)
-            self.new_frame = None
-
-        self.after(1, self.switch_frame)
+    def clicked(self, flag):
+        self.current_frame.destroy()
+        if flag == 'frame_1':
+            self.current_frame = FrameTwo(self)
+        if flag == 'frame_2':
+            self.current_frame = FrameOne(self)
+        self.current_frame.pack(fill="both", expand=True)
 
 
 class FrameOne(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.button = tk.Button(self, text="Foo", command=self.switch)
-        self.button.pack()
         self.parent = parent
+        self.build_layout()
 
-    def switch(self):
-        self.parent.new_frame = FrameTwo(self.parent)
+    def build_layout(self):
+        tk.Button(self, text="Foo", command=self.clicked).pack()
+
+    def clicked(self):
+        self.parent.clicked("frame_1")
 
 
 class FrameTwo(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.button = tk.Button(self, text="Bar", command=self.switch)
-        self.button.pack()
         self.parent = parent
+        self.build_layout()
 
-    def switch(self):
-        self.parent.new_frame = FrameOne(self.parent)
+    def build_layout(self):
+        tk.Button(self, text="Bar", command=self.clicked).pack()
+
+    def clicked(self):
+        self.parent.clicked("frame_2")
 
 
 if __name__ == "__main__":
