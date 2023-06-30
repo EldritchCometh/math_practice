@@ -26,22 +26,23 @@ class Problem(tk.Frame):
         super().__init__(parent)
         self.parent = parent
         self.make_grid()
-        self.question = self.make_question()
-        self.entry = self.make_entry()
+        self.question_frame, self.question = self.make_question()
+        self.entry_frame, self.entry = self.make_entry()
         self.make_timer_bar()
         self.make_progress_bar()
         self.last_window_size = (parent.winfo_width(), parent.winfo_height())
         self.bind("<Configure>", self.resize_fonts)
         # see if I can pass parent to resize_fonts()
 
-    def resize_fonts(self, _=None):
-        parent = self.parent
-        window_size = (parent.winfo_width(), parent.winfo_height())
-        if not window_size == self.last_window_size:
+    def resize_fonts(self, event):
+        window_width = event.widget.winfo_width()
+        window_height = event.widget.winfo_height()
+        window_size = (window_width, window_height)
+        if window_size != self.last_window_size:
             self.last_window_size = window_size
             font_size = min(
-                int(window_size[0] * 0.12),
-                int(window_size[1] * 0.7))
+                int(self.question_frame.winfo_width() * 0.176),
+                int(self.question_frame.winfo_height() * 0.9))
             self.question.config(font=("Arial", font_size))
             self.entry.config(font=("Arial", font_size))
 
@@ -50,7 +51,7 @@ class Problem(tk.Frame):
         question_frame.grid(row=0, column=0, sticky="nsew")
         label = ttk.Label(question_frame, text="22 + 22 =", font=("Arial", 108))
         label.place(relx=0.5, rely=0.5, anchor='center')
-        return label
+        return question_frame, label
 
     def make_entry(self):
         entry_frame = tk.Frame(self)
@@ -62,7 +63,7 @@ class Problem(tk.Frame):
         entry.bind("<Return>", lambda _: parent.problem_entry(entry.get()))
         entry.bind("<KP_Enter>", lambda _: parent.problem_entry(entry.get()))
         entry.focus_set()
-        return entry
+        return entry_frame, entry
 
     def make_timer_bar(self):
         timer_frame = tk.Frame(self)
