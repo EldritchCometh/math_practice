@@ -6,10 +6,11 @@ class FlashCardsGame(tk.Tk):
 
     def __init__(self, window_dims):
         super().__init__()
-        self.window_dims = window_dims
         self.window(window_dims)
-        self.current_frame = Problem(self)
+        self.current_frame = Problem(window_dims)
         self.current_frame.pack(fill="both", expand=True)
+        self.current_frame.entry.bind("<Return>", self.check_answer)
+        self.current_frame.entry.bind("<KP_Enter>", self.check_answer)
 
     def window(self, window_dims):
         self.title("Arithmetic Flashcards")
@@ -23,10 +24,10 @@ class FlashCardsGame(tk.Tk):
 
 class Problem(tk.Frame):
 
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, window_dims):
+        super().__init__()
         self.init = True
-        self.last_window_size = parent.window_dims
+        self.last_window_size = window_dims
         self.question_frame = None
         self.question = None
         self.entry = None
@@ -61,8 +62,6 @@ class Problem(tk.Frame):
         entry = ttk.Entry(
             entry_frame, justify="center", width=2, font=("Arial", 108))
         entry.pack(fill="both", expand=True)
-        entry.bind("<Return>", self.master.check_answer)
-        entry.bind("<KP_Enter>", self.master.check_answer)
         entry.focus_set()
         self.entry = entry
 
