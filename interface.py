@@ -4,22 +4,21 @@ from tkinter import ttk
 
 class FlashCardsGame(tk.Tk):
 
-    def __init__(self, window_width, window_height):
+    def __init__(self, window_dims):
         super().__init__()
-        self.width = window_width
-        self.height = window_height
-        self.window()
+        self.window_dims = window_dims
+        self.window(window_dims)
         self.current_frame = Problem(self)
         self.current_frame.pack(fill="both", expand=True)
 
-    def window(self):
+    def window(self, window_dims):
         self.title("Arithmetic Flashcards")
-        x = (self.winfo_screenwidth() - self.width) // 2
-        y = (self.winfo_screenheight() - self.height) // 2
-        self.geometry(f"{self.width}x{self.height}+{x}+{y}")
+        x = (self.winfo_screenwidth() - window_dims[0]) // 2
+        y = (self.winfo_screenheight() - window_dims[1]) // 2
+        self.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
 
-    def problem_entry(self, entry):
-        print(entry)
+    def check_answer(self, event):
+        print(event.widget.get())
 
 
 class Problem(tk.Frame):
@@ -27,7 +26,7 @@ class Problem(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.init = True
-        self.last_window_size = (parent.width, parent.height)
+        self.last_window_size = parent.window_dims
         self.question_frame = None
         self.question = None
         self.entry = None
@@ -62,10 +61,8 @@ class Problem(tk.Frame):
         entry = ttk.Entry(
             entry_frame, justify="center", width=2, font=("Arial", 108))
         entry.pack(fill="both", expand=True)
-        entry.bind(
-            "<Return>", lambda _: self.master.problem_entry(entry.get()))
-        entry.bind(
-            "<KP_Enter>", lambda _: self.master.problem_entry(entry.get()))
+        entry.bind("<Return>", self.master.check_answer)
+        entry.bind("<KP_Enter>", self.master.check_answer)
         entry.focus_set()
         self.entry = entry
 
@@ -95,5 +92,6 @@ class Problem(tk.Frame):
 
 if __name__ == "__main__":
 
-    window = FlashCardsGame(1100, 200)
+    window_dimensions = (1100, 200)
+    window = FlashCardsGame(window_dimensions)
     window.mainloop()
