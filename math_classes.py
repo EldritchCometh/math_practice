@@ -46,11 +46,11 @@ class SubtractionProblems(Problems):
 
 class MathProblems:
 
-    def __init__(self, num_of_probs, *args):
+    def __init__(self):
         self.probs = []
-        self.add_probs(*args)
+        self.add_probs(AdditionProblems(1, 10), SubtractionProblems(1, 10))
         random.shuffle(self.probs)
-        self.probs = self.probs[:num_of_probs]
+        self.probs = self.probs[:20]
 
     def get_prob(self):
         return random.choice(self.probs)

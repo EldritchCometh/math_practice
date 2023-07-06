@@ -1,13 +1,17 @@
 import tkinter as tk
 from tkinter import ttk
+from math_classes import MathProblems
 
 
 class FlashCardsGame(tk.Tk):
 
     def __init__(self, window_dims):
         super().__init__()
+        self.window_dims = window_dims
         self.window(window_dims)
-        self.current_frame = Problem(window_dims)
+        self.problems = MathProblems()
+        self.problem = self.problems.get_prob()
+        self.current_frame = ProblemFrame(window_dims, self.problem)
         self.current_frame.pack(fill="both", expand=True)
         self.current_frame.entry.bind("<Return>", self.check_answer)
         self.current_frame.entry.bind("<KP_Enter>", self.check_answer)
@@ -19,15 +23,31 @@ class FlashCardsGame(tk.Tk):
         self.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
 
     def check_answer(self, event):
-        print(event.widget.get())
+        answer_str = event.widget.get()
+        try:
+            answer = int(answer_str)
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+            return
+        if answer == self.problem.answer:
+            print('Correct answer.')
+            self.current_frame.destroy()
+            self.problem = self.problems.get_prob()
+            self.current_frame = ProblemFrame(self.window_dims, self.problem)
+            self.current_frame.pack(fill="both", expand=True)
+            self.current_frame.entry.bind("<Return>", self.check_answer)
+            self.current_frame.entry.bind("<KP_Enter>", self.check_answer)
+        else:
+            print('Incorrect answer.')
 
 
-class Problem(tk.Frame):
+class ProblemFrame(tk.Frame):
 
-    def __init__(self, window_dims):
+    def __init__(self, window_dims, problem):
         super().__init__()
         self.init = True
         self.last_window_size = window_dims
+        self.problem = problem
         self.question_frame = None
         self.question = None
         self.entry = None
@@ -51,7 +71,7 @@ class Problem(tk.Frame):
     def make_question(self):
         question_frame = tk.Frame(self)
         question_frame.grid(row=0, column=0, sticky="nsew")
-        question = ttk.Label(question_frame, text="22 + 22 =", font=("Arial", 108))
+        question = ttk.Label(question_frame, text=self.problem.question, font=("Arial", 108))
         question.place(relx=0.5, rely=0.5, anchor='center')
         self.question_frame = question_frame
         self.question = question
