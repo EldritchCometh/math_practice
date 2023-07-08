@@ -7,11 +7,11 @@ class FlashCardsGame(tk.Tk):
 
     def __init__(self, window_dims):
         super().__init__()
-        self.window_dims = window_dims
+        self.font = 132
         self.window(window_dims)
         self.problems = MathProblems()
         self.problem = self.problems.get_prob()
-        self.current_frame = ProblemFrame(window_dims, self.problem)
+        self.current_frame = ProblemFrame(self.problem, self.font)
         self.current_frame.pack(fill="both", expand=True)
         self.current_frame.entry.bind("<Return>", self.check_answer)
         self.current_frame.entry.bind("<KP_Enter>", self.check_answer)
@@ -23,35 +23,28 @@ class FlashCardsGame(tk.Tk):
         self.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
 
     def check_answer(self, event):
-        answer_str = event.widget.get()
-        try:
-            answer = int(answer_str)
-        except ValueError:
-            print("Invalid input. Please enter a number.")
-            return
-        if answer == self.problem.answer:
-            print('Correct answer.')
-            self.current_frame.destroy()
-            self.problem = self.problems.get_prob()
-            self.current_frame = ProblemFrame(self.window_dims, self.problem)
-            self.current_frame.pack(fill="both", expand=True)
-            self.current_frame.entry.bind("<Return>", self.check_answer)
-            self.current_frame.entry.bind("<KP_Enter>", self.check_answer)
-        else:
-            print('Incorrect answer.')
+        if int(event.widget.get()) == self.problem.answer:
+            self.problems.rem_prob(self.problem)
+        self.font = self.current_frame.font_size
+        self.problem = self.problems.get_prob()
+        self.current_frame.destroy()
+        self.current_frame = ProblemFrame(self.problem, self.font)
+        self.current_frame.pack(fill="both", expand=True)
+        self.current_frame.entry.bind("<Return>", self.check_answer)
+        self.current_frame.entry.bind("<KP_Enter>", self.check_answer)
 
 
 class ProblemFrame(tk.Frame):
 
-    def __init__(self, window_dims, problem):
+    def __init__(self, problem, font):
         super().__init__()
         self.init = True
-        self.last_window_size = window_dims
         self.problem = problem
         self.question_frame = None
         self.question = None
         self.entry = None
         self.make_widgets()
+        self.font_size = font
         self.bind("<Configure>", self.resize_fonts)
 
     def make_widgets(self):
@@ -97,16 +90,15 @@ class ProblemFrame(tk.Frame):
         prog = ttk.Progressbar(prog_frame, maximum=100, value=100)
         prog.pack(fill="both", expand=True)
 
-    def resize_fonts(self, event):
-        window_size = (event.widget.winfo_width(), event.widget.winfo_height())
-        if window_size == self.last_window_size:
+    def resize_fonts(self, _):
+        self.question.config(font=("Arial", self.font_size))
+        self.entry.config(font=("Arial", self.font_size))
+        if self.init:
+            self.init = False
             return
-        self.last_window_size = window_size
-        font_size = min(
+        self.font_size = min(
             int(self.question_frame.winfo_width() * 0.176),
             int(self.question_frame.winfo_height() * 0.9))
-        self.question.config(font=("Arial", font_size))
-        self.entry.config(font=("Arial", font_size))
 
 
 if __name__ == "__main__":
