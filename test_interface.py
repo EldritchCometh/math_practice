@@ -2,23 +2,18 @@ import tkinter as tk
 from tkinter import ttk
 from math_classes import MathProblems
 
-# add problems presenting in various forms
-
-# add division
-
-# add mastery checking or level progression
-
 
 class FlashCardsGame(tk.Tk):
 
     def __init__(self, window_dims):
         super().__init__()
         self.font_size = 132
-        self.timer_duration = 10
         self.window(window_dims)
         self.problems = MathProblems()
-        self.current_frame = ProblemFrame(self)
+        self.problem = self.problems.get_prob()
+        self.current_frame = ProblemFrame(self, self.problem)
         self.current_frame.pack(fill="both", expand=True)
+        self.bind("<<ProblemStatus>>", self.handle_problem_status)
 
     def window(self, window_dims):
         self.title("Arithmetic Flashcards")
@@ -30,21 +25,26 @@ class FlashCardsGame(tk.Tk):
         if self.problems.remaining <= 0:
             self.destroy()
             return
-        self.font_size = self.current_frame.font_size
+        self.problem = self.problems.get_prob()
         self.current_frame.destroy()
-        self.current_frame = ProblemFrame(self)
+        self.current_frame = ProblemFrame(self, self.problem)
         self.current_frame.pack(fill="both", expand=True)
+
+    def handle_problem_status(self, event):
+        if not event.widget.failed:
+            self.problems.rem_prob(event.widget.problem)
+        self.get_new_prob()
 
 
 class ProblemFrame(tk.Frame):
 
-    def __init__(self, parent):
+    def __init__(self, parent, problem):
         super().__init__()
-        self.parent = parent
-        self.problem = parent.problems.get_prob()
-        self.font_size = parent.font_size
         self.init = True
         self.failed = False
+        self.duration = 10
+        self.parent = parent
+        self.problem = problem
         self.question_frame = None
         self.question = None
         self.entry = None
@@ -85,39 +85,6 @@ class ProblemFrame(tk.Frame):
         entry.bind("<KP_Enter>", self.check_answer)
         self.entry = entry
 
-    def make_timer_bar(self):
-        timer_frame = tk.Frame(self)
-        timer_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
-        timer = ttk.Progressbar(
-            timer_frame,
-            maximum=self.parent.timer_duration * 10,
-            value=self.parent.timer_duration * 10)
-        timer.pack(fill="both", expand=True)
-        self.update_timer_bar(timer)
-
-    def make_progress_bar(self):
-        prog_frame = tk.Frame(self)
-        prog_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
-        maximum = self.parent.problems.num_starting_probs
-        prog = ttk.Progressbar(
-            prog_frame,
-            maximum=maximum,
-            value=(maximum - self.parent.problems.remaining))
-        prog.pack(fill="both", expand=True)
-
-    def check_answer(self, event):
-        try:
-            answer = int(event.widget.get())
-        except ValueError:
-            return
-        if answer != self.problem.answer:
-            self.failed = True
-            event.widget.delete(0, 'end')
-            return
-        if not self.failed:
-            self.parent.problems.rem_prob(self.problem)
-        self.parent.get_new_prob()
-
     def update_timer_bar(self, timer):
         if not timer.winfo_exists():
             return
@@ -128,19 +95,48 @@ class ProblemFrame(tk.Frame):
         timer['value'] -= 1
         self.after(100, lambda: self.update_timer_bar(timer))
 
+    def make_timer_bar(self):
+        timer_frame = tk.Frame(self)
+        timer_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        timer = ttk.Progressbar(
+            timer_frame,
+            maximum=self.duration * 10,
+            value=self.duration * 10)
+        timer.pack(fill="both", expand=True)
+        self.update_timer_bar(timer)
+
+    def make_progress_bar(self):
+        prog_frame = tk.Frame(self)
+        prog_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
+        maximum = self.parent.num_starting_probs
+        prog = ttk.Progressbar(
+            prog_frame,
+            maximum=maximum,
+            value=(maximum - self.parent.problems.remaining))
+        prog.pack(fill="both", expand=True)
+
     def resize_fonts(self, _):
         if self.init:
             self.init = False
             return
-        self.font_size = min(
+        self.parent.font_size = min(
             int(self.question_frame.winfo_width() * 0.176),
             int(self.question_frame.winfo_height() * 0.9))
-        self.question.config(font=("Arial", self.font_size))
-        self.entry.config(font=("Arial", self.font_size))
+        self.question.config(font=("Arial", self.parent.font_size))
+        self.entry.config(font=("Arial", self.parent.font_size))
+
+    def check_answer(self, event):
+        try:
+            answer = int(event.widget.get())
+        except ValueError:
+            return
+        if answer != self.problem.answer:
+            self.failed = True
+        event.widget.delete(0, 'end')
+        self.parent.event_generate("<<ProblemStatus>>", when='tail')
 
 
 if __name__ == "__main__":
-
     window_dimensions = (1100, 200)
     window = FlashCardsGame(window_dimensions)
     window.mainloop()
