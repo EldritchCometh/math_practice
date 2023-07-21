@@ -9,31 +9,45 @@ from math_classes import MathProblems
 # add mastery checking or level progression
 
 
-class FlashCardsGame(tk.Tk):
+class FlashCardsGame:
 
     def __init__(self, window_dims):
-        super().__init__()
+        self.root = tk.Tk()
         self.font_size = 132
-        self.timer_duration = 10
-        self.window(window_dims)
+        self.timer_duration = 30
+        self.configure_window(window_dims)
         self.problems = MathProblems()
-        self.current_frame = ProblemFrame(self)
+        self.current_frame = StartingFrame(self)
         self.current_frame.pack(fill="both", expand=True)
 
-    def window(self, window_dims):
-        self.title("Arithmetic Flashcards")
-        x = (self.winfo_screenwidth() - window_dims[0]) // 2
-        y = (self.winfo_screenheight() - window_dims[1]) // 2
-        self.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
+    def configure_window(self, window_dims):
+        self.root.title("Arithmetic Flashcards")
+        x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
+        y = (self.root.winfo_screenheight() - window_dims[1]) // 2
+        self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
 
     def get_new_prob(self):
         if self.problems.remaining <= 0:
-            self.destroy()
+            self.root.destroy()
             return
-        self.font_size = self.current_frame.font_size
+        if hasattr(self.current_frame, 'font_size'):
+            self.font_size = self.current_frame.font_size
         self.current_frame.destroy()
         self.current_frame = ProblemFrame(self)
         self.current_frame.pack(fill="both", expand=True)
+
+
+class StartingFrame(tk.Frame):
+
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.make_start_button()
+
+    def make_start_button(self):
+        start_button = ttk.Button(
+            self, text="Start", command=self.parent.get_new_prob)
+        start_button.pack(pady=20)
 
 
 class ProblemFrame(tk.Frame):
@@ -45,6 +59,7 @@ class ProblemFrame(tk.Frame):
         self.font_size = parent.font_size
         self.init = True
         self.failed = False
+        self.timer = False
         self.question_frame = None
         self.question = None
         self.entry = None
@@ -52,13 +67,13 @@ class ProblemFrame(tk.Frame):
         self.bind("<Configure>", self.resize_fonts)
 
     def make_widgets(self):
-        self.make_grid()
+        self.configure_grid()
         self.make_question()
         self.make_entry()
         self.make_timer_bar()
         self.make_progress_bar()
 
-    def make_grid(self):
+    def configure_grid(self):
         self.grid_rowconfigure(0, weight=5)
         self.grid_rowconfigure(1, weight=1, minsize=20)
         self.grid_rowconfigure(2, weight=1, minsize=20)
@@ -110,13 +125,13 @@ class ProblemFrame(tk.Frame):
             answer = int(event.widget.get())
         except ValueError:
             return
-        if answer != self.problem.answer:
+        if answer == self.problem.answer:
+            if not self.failed:
+                self.parent.problems.rem_prob(self.problem)
+            self.parent.get_new_prob()
+        else:
             self.failed = True
             event.widget.delete(0, 'end')
-            return
-        if not self.failed:
-            self.parent.problems.rem_prob(self.problem)
-        self.parent.get_new_prob()
 
     def update_timer_bar(self, timer):
         if not timer.winfo_exists():
@@ -125,7 +140,8 @@ class ProblemFrame(tk.Frame):
             return
         if timer['value'] <= 0:
             self.failed = True
-        timer['value'] -= 1
+        if self.timer:
+            timer['value'] -= 1
         self.after(100, lambda: self.update_timer_bar(timer))
 
     def resize_fonts(self, _):
@@ -142,5 +158,5 @@ class ProblemFrame(tk.Frame):
 if __name__ == "__main__":
 
     window_dimensions = (1100, 200)
-    window = FlashCardsGame(window_dimensions)
-    window.mainloop()
+    game = FlashCardsGame(window_dimensions)
+    game.root.mainloop()

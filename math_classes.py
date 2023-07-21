@@ -22,18 +22,22 @@ class MathProblems:
 
     def __init__(self):
         self.probs = []
-        self.add_probs(2, 9, add, '+')
-        self.add_probs(2, 9, sub, '-')
-        # self.add_probs(2, 9, mul, '*')
+        self.probs.extend(self.make_probs(2, 99, add, '+')[:13])
+        self.probs.extend(self.make_probs(2, 99, sub, '-')[:13])
+        self.probs.extend(self.make_probs(3, 9, mul, '*')[:13])
         self.num_starting_probs = len(self.probs)
         random.shuffle(self.probs)
 
-    def add_probs(self, range_min, range_max, operator, symbol):
+    @staticmethod
+    def make_probs(range_min, range_max, operator, symbol):
+        to_be_added = []
         for i in range(range_min, range_max + 1):
             for j in range(range_min, range_max + 1):
                 prob = Problem(i, j, operator, symbol)
-                if prob.answer > 1:
-                    self.probs.append(prob)
+                if 2 <= prob.answer <= 99:
+                    to_be_added.append(prob)
+        random.shuffle(to_be_added)
+        return to_be_added
 
     def get_prob(self):
         return random.choice(self.probs)
