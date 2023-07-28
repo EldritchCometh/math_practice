@@ -2,12 +2,6 @@ import tkinter as tk
 from tkinter import ttk
 from math_classes import MathProblems
 
-# add problems presenting in various forms
-
-# add division
-
-# add mastery checking or level progression
-
 
 class FlashCardsGame:
 
@@ -17,7 +11,7 @@ class FlashCardsGame:
         self.timer_duration = 30
         self.configure_window(window_dims)
         self.problems = MathProblems()
-        self.current_frame = StartingFrame(self)
+        self.current_frame = ProblemFrame(self)
         self.current_frame.pack(fill="both", expand=True)
 
     def configure_window(self, window_dims):
@@ -25,29 +19,6 @@ class FlashCardsGame:
         x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
         y = (self.root.winfo_screenheight() - window_dims[1]) // 2
         self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
-
-    def get_new_prob(self):
-        if self.problems.remaining <= 0:
-            self.root.destroy()
-            return
-        if hasattr(self.current_frame, 'font_size'):
-            self.font_size = self.current_frame.font_size
-        self.current_frame.destroy()
-        self.current_frame = ProblemFrame(self)
-        self.current_frame.pack(fill="both", expand=True)
-
-
-class StartingFrame(tk.Frame):
-
-    def __init__(self, parent):
-        super().__init__()
-        self.parent = parent
-        self.make_start_button()
-
-    def make_start_button(self):
-        start_button = ttk.Button(
-            self, text="Start", command=self.parent.get_new_prob)
-        start_button.pack(pady=20)
 
 
 class ProblemFrame(tk.Frame):
