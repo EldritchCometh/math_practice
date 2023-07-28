@@ -1,13 +1,17 @@
 import tkinter as tk
 from tkinter import ttk
+from math_classes import MathProblems
 
 
 class FlashCardsGame:
 
     def __init__(self, window_dims):
         self.root = tk.Tk()
+        self.font_size = 132
+        self.timer_duration = 30
         self.configure_window(window_dims)
-        self.current_frame = ProblemFrame()
+        self.problems = MathProblems()
+        self.current_frame = ProblemFrame(self)
         self.current_frame.pack(fill="both", expand=True)
 
     def configure_window(self, window_dims):
@@ -19,8 +23,9 @@ class FlashCardsGame:
 
 class ProblemFrame(tk.Frame):
 
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
+        self.parent = parent
         self.text = ['19', '+', '_', '=', '31']
         self.entry = None
         self.make_question_frame()

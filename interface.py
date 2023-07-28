@@ -26,6 +26,7 @@ class ProblemFrame(tk.Frame):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        self.text = ['19', '+', '_', '=', '31']
         self.problem = parent.problems.get_prob()
         self.font_size = parent.font_size
         self.init = True
@@ -34,62 +35,37 @@ class ProblemFrame(tk.Frame):
         self.question_frame = None
         self.question = None
         self.entry = None
-        self.make_widgets()
-        self.bind("<Configure>", self.resize_fonts)
-
-    def make_widgets(self):
-        self.configure_grid()
         self.make_question()
-        self.make_entry()
         self.make_timer_bar()
         self.make_progress_bar()
-
-    def configure_grid(self):
-        self.grid_rowconfigure(0, weight=5)
-        self.grid_rowconfigure(1, weight=1, minsize=20)
-        self.grid_rowconfigure(2, weight=1, minsize=20)
-        self.grid_columnconfigure(0, weight=5)
-        self.grid_columnconfigure(1, weight=1)
+        self.bind("<Configure>", self.resize_fonts)
 
     def make_question(self):
         question_frame = tk.Frame(self)
-        question_frame.grid(row=0, column=0, sticky="nsew")
-        question = ttk.Label(question_frame, text=self.problem.question)
-        question.config(font=("Arial", self.parent.font_size))
-        question.place(relx=0.5, rely=0.5, anchor='center')
-        self.question_frame = question_frame
-        self.question = question
-
-    def make_entry(self):
-        entry_frame = tk.Frame(self)
-        entry_frame.grid(row=0, column=1, sticky="nsew")
-        entry = ttk.Entry(entry_frame, justify="center", width=2)
-        entry.config(font=("Arial", self.parent.font_size))
-        entry.pack(fill="both", expand=True)
-        entry.focus_set()
-        entry.bind("<Return>", self.check_answer)
-        entry.bind("<KP_Enter>", self.check_answer)
-        self.entry = entry
+        question_frame.pack(fill='y', padx=10, pady=10, expand=True)
+        for t in self.text:
+            comp_frame = tk.Frame(question_frame)
+            comp_frame.pack(side='left')
+            if t == '_':
+                self.entry = tk.Entry(comp_frame)
+                self.entry.pack()
+            else:
+                label = tk.Label(comp_frame, text=t, font=("Ariel", 16))
+                label.pack()
 
     def make_timer_bar(self):
-        timer_frame = tk.Frame(self)
-        timer_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
-        timer = ttk.Progressbar(
-            timer_frame,
-            maximum=self.parent.timer_duration * 10,
-            value=self.parent.timer_duration * 10)
-        timer.pack(fill="both", expand=True)
-        self.update_timer_bar(timer)
+        timer_frame = tk.Frame(self, height=30)
+        timer_frame.pack(fill='x', padx=5, pady=2)
+        timer_frame.pack_propagate(0)
+        timer_bar = ttk.Progressbar(timer_frame)
+        timer_bar.pack(fill='both', expand=1)
 
     def make_progress_bar(self):
-        prog_frame = tk.Frame(self)
-        prog_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
-        maximum = self.parent.problems.num_starting_probs
-        prog = ttk.Progressbar(
-            prog_frame,
-            maximum=maximum,
-            value=(maximum - self.parent.problems.remaining))
-        prog.pack(fill="both", expand=True)
+        prog_frame = tk.Frame(self, height=30)
+        prog_frame.pack(fill='x', padx=5, pady=(2, 4))
+        prog_frame.pack_propagate(0)
+        prog_bar = ttk.Progressbar(prog_frame)
+        prog_bar.pack(fill='both', expand=1)
 
     def check_answer(self, event):
         try:
