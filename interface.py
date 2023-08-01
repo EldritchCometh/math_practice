@@ -36,18 +36,24 @@ class ProblemFrame(tk.Frame):
         self.question_frame = None
         self.question = None
         self.entry = None
+        self.progress_frame = None
+        self.timer_frame = None
         self.make_progress_bar()
         self.make_timer_bar()
         self.make_question()
-        self.bind("<Configure>", self.resize_fonts)
+        self.bind("<Configure>", self.resize_elements)
 
     def make_progress_bar(self):
-        progress = ttk.Progressbar(self)
-        progress.pack(side='bottom', fill='x', padx=5, pady=(2, 4))
+        self.progress_frame = ttk.Frame(self, height=30)
+        self.progress_frame.pack(side='bottom', fill='x', padx=5, pady=(2, 4))
+        progress_bar = ttk.Progressbar(self.progress_frame)
+        progress_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
 
     def make_timer_bar(self):
-        timer = ttk.Progressbar(self)
-        timer.pack(side='bottom', fill='x', padx=5, pady=2)
+        self.timer_frame = ttk.Frame(self, height=30)
+        self.timer_frame.pack(side='bottom', fill='x', padx=5, pady=(2, 4))
+        timer_bar = ttk.Progressbar(self.timer_frame)
+        timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
 
     def make_question(self):
         self.question_frame = tk.Frame(self)
@@ -56,11 +62,11 @@ class ProblemFrame(tk.Frame):
             comp_frame = tk.Frame(self.question_frame)
             comp_frame.pack(side='left', anchor='center')
             if t == '_':
-                self.entry = tk.Entry(comp_frame, width=2, font=("Ariel", 16))
+                self.entry = tk.Entry(comp_frame, width=2, font=("Ariel", self.font_size))
                 self.q_comps.append(self.entry)
                 self.entry.pack()
             else:
-                label = tk.Label(comp_frame, text=t, font=("Ariel", 16))
+                label = tk.Label(comp_frame, text=t, font=("Ariel", self.font_size))
                 self.q_comps.append(label)
                 label.pack()
 
@@ -88,10 +94,15 @@ class ProblemFrame(tk.Frame):
             timer['value'] -= 1
         self.after(100, lambda: self.update_timer_bar(timer))
 
-    def resize_fonts(self, _):
+    def resize_elements(self, _):
+        w_height = self.winfo_height()
+        prog_bars_heights = max(30, w_height * 0.05)
+        self.progress_frame.config(height=prog_bars_heights)
+        self.timer_frame.config(height=prog_bars_heights)
+        q_frame_height = w_height - (prog_bars_heights * 2 + 8)
         self.font_size = min(
-            int(self.question_frame.winfo_width() * 0.16),
-            int(self.question_frame.winfo_height() * 0.8))
+            int(self.winfo_width() * 0.16),
+            int(q_frame_height * 0.7))
         for comp in self.q_comps:
             comp.config(font=("Arial", self.font_size))
 
