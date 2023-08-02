@@ -4,40 +4,51 @@ from operator import add, sub, mul
 
 class Problem:
 
-    def __init__(self, l_operand, r_operand, operator, symbol):
-        self.operands = (l_operand, r_operand)
+    def __init__(self, fst_operand, snd_operand, operator):
+        self.fst_operand = fst_operand
+        self.snd_operand = snd_operand
         self.operator = operator
-        self.symbol = symbol
+        self.result = operator(fst_operand, snd_operand)
+        self.var_idx = random.randint(0, 2)
+        self.variable = [fst_operand, snd_operand, self.result][self.var_idx]
+        self.question_text = self.get_question_text()
 
-    @property
-    def question(self):
-        return f'{self.operands[0]} {self.symbol} {self.operands[1]} ='
-
-    @property
-    def answer(self):
-        return self.operator(self.operands[0], self.operands[1])
+    def get_question_text(self):
+        symbol = {add: '+', sub: '-', mul: '*'}[self.operator]
+        comps = [self.fst_operand, self.snd_operand, self.result]
+        comps[self.var_idx] = '_'
+        if random.randint(0, 1):
+            return [comps[0], symbol, comps[1], '=', comps[2]]
+        else:
+            return [comps[2], '=', comps[0], symbol, comps[1]]
 
 
 class MathProblems:
 
     def __init__(self):
         self.probs = []
-        self.probs.extend(self.make_probs(2, 99, add, '+')[:13])
-        self.probs.extend(self.make_probs(2, 99, sub, '-')[:13])
-        self.probs.extend(self.make_probs(3, 9, mul, '*')[:13])
+        self.probs.extend(self.make_probs(2, 4, add))
+        self.probs.extend(self.make_probs(2, 4, sub))
+        self.probs.extend(self.make_probs(3, 4, mul))
+        self.probs.extend(self.make_probs(2, 4, add))
+        self.probs.extend(self.make_probs(2, 4, sub))
+        self.probs.extend(self.make_probs(3, 4, mul))
+        self.probs.extend(self.make_probs(2, 4, add))
+        self.probs.extend(self.make_probs(2, 4, sub))
+        self.probs.extend(self.make_probs(3, 4, mul))
         self.num_starting_probs = len(self.probs)
         random.shuffle(self.probs)
 
     @staticmethod
-    def make_probs(range_min, range_max, operator, symbol):
-        to_be_added = []
+    def make_probs(range_min, range_max, operator):
+        probs = []
         for i in range(range_min, range_max + 1):
             for j in range(range_min, range_max + 1):
-                prob = Problem(i, j, operator, symbol)
-                if 2 <= prob.answer <= 99:
-                    to_be_added.append(prob)
-        random.shuffle(to_be_added)
-        return to_be_added
+                prob = Problem(i, j, operator)
+                if 2 <= prob.result <= 99:
+                    probs.append(prob)
+        random.shuffle(probs)
+        return probs
 
     def get_prob(self):
         return random.choice(self.probs)
