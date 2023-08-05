@@ -25,30 +25,24 @@ class Problem:
 
 class MathProblems:
 
-    def __init__(self):
+    def __init__(self, user):
         self.probs = []
-        self.probs.extend(self.make_probs(2, 4, add))
-        self.probs.extend(self.make_probs(2, 4, sub))
-        self.probs.extend(self.make_probs(3, 4, mul))
-        self.probs.extend(self.make_probs(2, 4, add))
-        self.probs.extend(self.make_probs(2, 4, sub))
-        self.probs.extend(self.make_probs(3, 4, mul))
-        self.probs.extend(self.make_probs(2, 4, add))
-        self.probs.extend(self.make_probs(2, 4, sub))
-        self.probs.extend(self.make_probs(3, 4, mul))
-        self.num_starting_probs = len(self.probs)
+        self.probs.extend(self.make_probs(0, 6, add)[:user.num_of_adds])
+        self.probs.extend(self.make_probs(0, 6, sub)[:user.num_of_subs])
+        self.probs.extend(self.make_probs(0, 6, mul)[:user.num_of_muls])
         random.shuffle(self.probs)
+        self.probs = self.probs[:user.num_of_probs]
+        self.num_starting_probs = len(self.probs)
 
-    @staticmethod
-    def make_probs(range_min, range_max, operator):
+    def make_probs(self, range_min, range_max, operator):
         probs = []
         for i in range(range_min, range_max + 1):
             for j in range(range_min, range_max + 1):
                 prob = Problem(i, j, operator)
-                if 2 <= prob.result <= 99:
+                if 0 <= prob.result <= 99:
                     probs.append(prob)
         random.shuffle(probs)
-        return probs
+        self.probs.extend(probs)
 
     def get_prob(self):
         return random.choice(self.probs)

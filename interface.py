@@ -1,14 +1,16 @@
 import tkinter as tk
 from tkinter import ttk
 from math_classes import MathProblems
+from users import *
 
 
 class FlashCardsGame:
 
-    def __init__(self, window_dims):
+    def __init__(self, user):
+        self.user = user
         self.root = tk.Tk()
-        self.configure_window(window_dims)
-        self.problems = MathProblems()
+        self.configure_window((1200, 325))
+        self.problems = MathProblems(user)
         self.current_frame = ProblemFrame(self)
         self.current_frame.pack(fill="both", expand=True)
 
@@ -35,19 +37,13 @@ class ProblemFrame(tk.Frame):
         self.problem = parent.problems.get_prob()
         self.failed = False
         self.q_comps = []
-        self.entry = None
-        self.timer_bar = False
         self.font_size = None
         self.progress_frame = None
         self.timer_frame = None
-        self.timer_duration = 30
         self.make_timer_bar()
         self.make_progress_bar()
         self.make_question()
-        self.update_timer_bar()
         self.bind("<Configure>", self.resize_elements)
-        self.entry.bind("<Return>", self.check_answer)
-        self.entry.bind("<KP_Enter>", self.check_answer)
 
     def make_question(self):
         question_frame = tk.Frame(self)
@@ -56,10 +52,12 @@ class ProblemFrame(tk.Frame):
             comp_frame = tk.Frame(question_frame)
             comp_frame.pack(side='left', anchor='center')
             if t == '_':
-                self.entry = tk.Entry(comp_frame, width=2)
-                self.q_comps.append(self.entry)
-                self.entry.pack(padx=3, pady=3)
-                self.entry.focus_set()
+                entry = tk.Entry(comp_frame, width=2)
+                self.q_comps.append(entry)
+                entry.pack(padx=3, pady=3)
+                entry.focus_set()
+                entry.bind("<Return>", self.check_answer)
+                entry.bind("<KP_Enter>", self.check_answer)
             else:
                 label = tk.Label(comp_frame, text=t)
                 self.q_comps.append(label)
@@ -78,22 +76,25 @@ class ProblemFrame(tk.Frame):
     def make_timer_bar(self):
         self.timer_frame = ttk.Frame(self, height=30)
         self.timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
-        self.timer_bar = ttk.Progressbar(
+        timer_duration = self.parent.user.timer or 1
+        timer_bar = ttk.Progressbar(
             self.timer_frame,
-            maximum=self.timer_duration * 10,
-            value=self.timer_duration * 10)
-        self.timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
+            maximum=timer_duration * 10,
+            value=timer_duration * 10)
+        timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
+        if self.parent.user.timer:
+            self.update_timer_bar(timer_bar)
 
-    def update_timer_bar(self):
-        if not self.timer_bar.winfo_exists():
+    def update_timer_bar(self, timer_bar):
+        if not timer_bar.winfo_exists():
             return
         elif self.failed:
             return
-        elif self.timer_bar['value'] <= 0:
+        elif timer_bar['value'] <= 0:
             self.failed = True
         else:
-            self.timer_bar['value'] -= 1
-        self.after(100, lambda: self.update_timer_bar())
+            timer_bar['value'] -= 1
+        self.after(100, lambda: self.update_timer_bar(timer_bar))
 
     def resize_elements(self, _):
         prog_bars_heights = max(25, self.winfo_height() * 0.05)
@@ -121,6 +122,6 @@ class ProblemFrame(tk.Frame):
 
 if __name__ == "__main__":
 
-    window_dimensions = (1200, 325)
-    game = FlashCardsGame(window_dimensions)
+    olive = Olive()
+    game = FlashCardsGame(olive)
     game.root.mainloop()
