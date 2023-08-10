@@ -1,7 +1,86 @@
+import random
 import tkinter as tk
 from tkinter import ttk
-from math_classes import MathProblems
-from users import *
+from operator import add, sub, mul
+
+
+class Olive:
+
+    timer = None
+    num_of_probs = 100
+    num_of_adds = 30
+    num_of_subs = 30
+    num_of_muls = 40
+    add_opr_range = (0, 6)
+    sub_opr_range = (0, 6)
+    mul_opr_range = (1, 6)
+
+
+class Clem:
+
+    timer = None
+    num_of_probs = 10
+    num_of_adds = 25
+    num_of_subs = 25
+    num_of_muls = 0
+    add_opr_range = (0, 5)
+    sub_opr_range = (0, 5)
+    mul_opr_range = (0, 0)
+
+
+class Problem:
+
+    def __init__(self, fst_operand, snd_operand, operator):
+        self.fst_operand = fst_operand
+        self.snd_operand = snd_operand
+        self.operator = operator
+        self.result = operator(fst_operand, snd_operand)
+        self.var_idx = random.randint(0, 2)
+        self.variable = [fst_operand, snd_operand, self.result][self.var_idx]
+        self.question_text = self.get_question_text()
+
+    def get_question_text(self):
+        symbol = {add: '+', sub: '-', mul: '*'}[self.operator]
+        comps = [self.fst_operand, self.snd_operand, self.result]
+        comps[self.var_idx] = '_'
+        if random.randint(0, 1):
+            return [comps[0], symbol, comps[1], '=', comps[2]]
+        else:
+            return [comps[2], '=', comps[0], symbol, comps[1]]
+
+
+class MathProblems:
+
+    def __init__(self, user):
+        self.probs = []
+        self.make_probs(*user.add_opr_range, add, user.num_of_adds)
+        self.make_probs(*user.sub_opr_range, sub, user.num_of_subs)
+        self.make_probs(*user.mul_opr_range, mul, user.num_of_muls)
+        random.shuffle(self.probs)
+        self.probs = self.probs[:user.num_of_probs]
+        self.num_starting_probs = len(self.probs)
+        print(self.num_starting_probs)
+
+    def make_probs(self, range_min, range_max, operator, num_of_probs):
+        probs = []
+        for i in range(range_min, range_max + 1):
+            for j in range(range_min, range_max + 1):
+                prob = Problem(i, j, operator)
+                if 0 <= prob.result <= 99:
+                    probs.append(prob)
+        random.shuffle(probs)
+        probs = probs[:num_of_probs]
+        self.probs.extend(probs)
+
+    def get_prob(self):
+        return random.choice(self.probs)
+
+    def rem_prob(self, problem):
+        self.probs.remove(problem)
+
+    @property
+    def remaining(self):
+        return len(self.probs)
 
 
 class FlashCardsGame:
@@ -122,6 +201,6 @@ class ProblemFrame(tk.Frame):
 
 if __name__ == "__main__":
 
-    olive = Olive()
-    game = FlashCardsGame(olive)
+    settings = Clem()
+    game = FlashCardsGame(settings)
     game.root.mainloop()

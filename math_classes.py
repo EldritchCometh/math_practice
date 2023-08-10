@@ -17,11 +17,13 @@ class Problem:
         symbol = {add: '+', sub: '-', mul: '*'}[self.operator]
         comps = [self.fst_operand, self.snd_operand, self.result]
         comps[self.var_idx] = '_'
+        '''
         if random.randint(0, 1):
             return [comps[0], symbol, comps[1], '=', comps[2]]
         else:
             return [comps[2], '=', comps[0], symbol, comps[1]]
-
+        '''
+        return [comps[2], '=', comps[0], symbol, comps[1]]
 
 class MathProblems:
 
@@ -34,6 +36,7 @@ class MathProblems:
         self.probs = self.probs[:user.num_of_probs]
         self.num_starting_probs = len(self.probs)
 
+    @staticmethod
     def make_probs(self, range_min, range_max, operator):
         probs = []
         for i in range(range_min, range_max + 1):
@@ -42,7 +45,7 @@ class MathProblems:
                 if 0 <= prob.result <= 99:
                     probs.append(prob)
         random.shuffle(probs)
-        self.probs.extend(probs)
+        return probs
 
     def get_prob(self):
         return random.choice(self.probs)

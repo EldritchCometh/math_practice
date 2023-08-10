@@ -1,7 +1,7 @@
 
 class Olive:
 
-    timer = None
+    timer = 30
     num_of_probs = 100
     num_of_adds = None
     num_of_subs = None
