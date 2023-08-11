@@ -36,7 +36,7 @@ class Problem:
         self.operator = operator
         self.result = operator(fst_operand, snd_operand)
         self.var_idx = random.randint(0, 2)
-        self.variable = [fst_operand, snd_operand, self.result][self.var_idx]
+        self.answer = [fst_operand, snd_operand, self.result][self.var_idx]
         self.question_text = self.get_question_text()
 
     def get_question_text(self):
@@ -58,8 +58,7 @@ class MathProblems:
         self.make_probs(*settings.mul_opr_range, mul, settings.num_of_muls)
         random.shuffle(self.probs)
         self.probs = self.probs[:settings.num_of_probs]
-        self.num_starting_probs = len(self.probs)
-        print(self.num_starting_probs)
+        self.starting = len(self.probs)
 
     def make_probs(self, range_min, range_max, operator, num_of_probs):
         probs = []
@@ -92,12 +91,13 @@ class FlashCardsGame:
         self.problem = self.problems.get_prob()
         self.current_frame = ProblemFrame(
             self.problem.question_text,
-            self.problems.num_starting_probs,
+            self.problems.starting,
             self.problems.remaining,
-            settings)
+            settings.timer)
         self.current_frame.pack(fill="both", expand=True)
-        self.current_frame.bind(ProblemFrame.ANSWER_ENTERED_EVENT,
-                                self.handle_answer_entered)
+        self.current_frame.entry.bind("<Return>", self.on_entered)
+        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
+        self.failed = False
 
     def configure_window(self, window_dims):
         self.root.title("Arithmetic Flashcards")
@@ -105,25 +105,46 @@ class FlashCardsGame:
         y = (self.root.winfo_screenheight() - window_dims[1]) // 2
         self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
 
-    @staticmethod
-    def handle_answer_entered(event):
-        print("handle_answer_entered successfully called")
+    def on_entered(self, _):
+        try:
+            answer = int(self.current_frame.entry.get())
+        except ValueError:
+            return
+        if answer == self.problem.answer:
+            if self.problems.remaining <= 0:
+                self.root.destroy()
+                return
+            if not self.failed:
+                self.problems.rem_prob(self.problem)
+            self.current_frame.destroy()
+            self.problem = self.problems.get_prob()
+            self.current_frame = ProblemFrame(
+                self.problem.question_text,
+                self.problems.starting,
+                self.problems.remaining,
+                settings.timer)
+            self.current_frame.pack(fill="both", expand=True)
+            self.current_frame.entry.bind("<Return>", self.on_entered)
+            self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
+            self.failed = False
+        else:
+            self.failed = True
+            self.current_frame.freeze_timer = True
+            self.current_frame.entry.delete(0, 'end')
 
 
 class ProblemFrame(tk.Frame):
 
-    ANSWER_ENTERED_EVENT = "<<AnswerEntered>>"
-
-    def __init__(self, text, num_starting_probs, num_remaining_probs, settings):
+    def __init__(self, text, starting, remaining, timer_setting):
         super().__init__()
-        self.frozen = False
+        self.freeze_timer = False
         self.q_comps = []
         self.font_size = None
         self.progress_frame = None
         self.timer_frame = None
         self.entry = None
-        self.make_timer_bar(settings)
-        self.make_progress_bar(num_starting_probs, num_remaining_probs)
+        self.make_timer_bar(timer_setting)
+        self.make_progress_bar(starting, remaining)
         self.make_question(text)
         self.bind("<Configure>", self.resize_elements)
 
@@ -138,22 +159,10 @@ class ProblemFrame(tk.Frame):
                 self.q_comps.append(self.entry)
                 self.entry.pack(padx=3, pady=3)
                 self.entry.focus_set()
-                self.entry.bind("<Return>", self.on_return_pressed)
-                self.entry.bind("<KP_Enter>", self.on_return_pressed)
             else:
                 label = tk.Label(comp_frame, text=t)
                 self.q_comps.append(label)
                 label.pack(padx=3, pady=3)
-
-    def on_return_pressed(self, event):
-        try:
-            answer = int(self.entry.get())
-            print(
-                f"Answer obtained: {answer}")  # Let's print the answer to debug
-            self.event_generate(
-                self.ANSWER_ENTERED_EVENT)  # No need to pass answer here
-        except ValueError:
-            return
 
     def make_progress_bar(self, num_starting_probs, num_remaining_probs):
         self.progress_frame = ttk.Frame(self, height=30)
@@ -164,22 +173,22 @@ class ProblemFrame(tk.Frame):
             value=(num_starting_probs - num_remaining_probs))
         progress_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-    def make_timer_bar(self, settings):
+    def make_timer_bar(self, timer_setting):
         self.timer_frame = ttk.Frame(self, height=30)
         self.timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
-        timer_duration = settings.timer or 1
+        timer_duration = timer_setting or 1
         timer_bar = ttk.Progressbar(
             self.timer_frame,
             maximum=timer_duration * 10,
             value=timer_duration * 10)
         timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
-        if settings.timer:
+        if timer_setting:
             self.update_timer_bar(timer_bar)
 
     def update_timer_bar(self, timer_bar):
         if not timer_bar.winfo_exists():
             return
-        elif self.frozen:
+        elif self.freeze_timer:
             return
         else:
             timer_bar['value'] -= 1
