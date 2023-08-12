@@ -221,5 +221,4 @@ class Clem:
 
 if __name__ == "__main__":
 
-    user = Clem()
-    game = FlashCardsGame(user)
+    game = FlashCardsGame(Clem)
