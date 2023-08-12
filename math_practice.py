@@ -58,70 +58,6 @@ class MathProblems:
         return len(self.probs)
 
 
-class FlashCardsGame:
-
-    def __init__(self, settings):
-        self.root = tk.Tk()
-        self.configure_window((1200, 325))
-        ProblemController(settings)
-        self.root.mainloop()
-
-    def configure_window(self, window_dims):
-        self.root.title("Arithmetic Flashcards")
-        x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
-        y = (self.root.winfo_screenheight() - window_dims[1]) // 2
-        self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
-
-
-class ProblemController:
-
-    def __init__(self, settings):
-        self.settings = settings
-        self.problems = MathProblems(settings)
-        self.problem = self.problems.get_prob()
-        self.current_frame = ProblemFrame(
-            self.problem.question_text,
-            self.problems.starting,
-            self.problems.remaining,
-            settings.timer)
-        self.current_frame.pack(fill="both", expand=True)
-        self.current_frame.entry.bind("<Return>", self.on_entered)
-        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
-        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
-        self.failed = False
-
-    def on_entered(self, _):
-        try:
-            answer = int(self.current_frame.entry.get())
-        except ValueError:
-            return
-        if answer != self.problem.answer:
-            self.failed = True
-            self.current_frame.timer_setting = None
-            self.current_frame.entry.delete(0, 'end')
-            return
-        if not self.failed:
-            self.problems.rem_prob(self.problem)
-        if self.problems.remaining <= 0:
-            self.root.destroy()
-            return
-        self.current_frame.destroy()
-        self.problem = self.problems.get_prob()
-        self.current_frame = ProblemFrame(
-            self.problem.question_text,
-            self.problems.starting,
-            self.problems.remaining,
-            self.settings.timer)
-        self.current_frame.pack(fill="both", expand=True)
-        self.current_frame.entry.bind("<Return>", self.on_entered)
-        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
-        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
-        self.failed = False
-
-    def on_out_of_time(self, _):
-        self.failed = True
-
-
 class ProblemFrame(tk.Frame):
 
     def __init__(self, text, starting, remaining, timer_setting):
@@ -193,6 +129,70 @@ class ProblemFrame(tk.Frame):
             comp.config(font=("Arial", self.font_size))
         self.progress_frame.config(height=prog_bars_heights)
         self.timer_frame.config(height=prog_bars_heights)
+
+
+class ProblemController:
+
+    def __init__(self, settings):
+        self.settings = settings
+        self.problems = MathProblems(settings)
+        self.problem = self.problems.get_prob()
+        self.current_frame = ProblemFrame(
+            self.problem.question_text,
+            self.problems.starting,
+            self.problems.remaining,
+            settings.timer)
+        self.current_frame.pack(fill="both", expand=True)
+        self.current_frame.entry.bind("<Return>", self.on_entered)
+        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
+        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
+        self.failed = False
+
+    def on_entered(self, _):
+        try:
+            answer = int(self.current_frame.entry.get())
+        except ValueError:
+            return
+        if answer != self.problem.answer:
+            self.failed = True
+            self.current_frame.timer_setting = None
+            self.current_frame.entry.delete(0, 'end')
+            return
+        if not self.failed:
+            self.problems.rem_prob(self.problem)
+        if self.problems.remaining <= 0:
+            self.root.destroy()
+            return
+        self.current_frame.destroy()
+        self.problem = self.problems.get_prob()
+        self.current_frame = ProblemFrame(
+            self.problem.question_text,
+            self.problems.starting,
+            self.problems.remaining,
+            self.settings.timer)
+        self.current_frame.pack(fill="both", expand=True)
+        self.current_frame.entry.bind("<Return>", self.on_entered)
+        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
+        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
+        self.failed = False
+
+    def on_out_of_time(self, _):
+        self.failed = True
+
+
+class FlashCardsGame:
+
+    def __init__(self, settings):
+        self.root = tk.Tk()
+        self.configure_window((1200, 325))
+        ProblemController(settings)
+        self.root.mainloop()
+
+    def configure_window(self, window_dims):
+        self.root.title("Arithmetic Flashcards")
+        x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
+        y = (self.root.winfo_screenheight() - window_dims[1]) // 2
+        self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
 
 
 class Olive:
