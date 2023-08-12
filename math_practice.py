@@ -4,30 +4,6 @@ from tkinter import ttk
 from operator import add, sub, mul
 
 
-class Olive:
-
-    timer = None
-    num_of_probs = 100
-    num_of_adds = 30
-    num_of_subs = 30
-    num_of_muls = 40
-    add_opr_range = (0, 6)
-    sub_opr_range = (0, 6)
-    mul_opr_range = (1, 6)
-
-
-class Clem:
-
-    timer = None
-    num_of_probs = 10
-    num_of_adds = 25
-    num_of_subs = 25
-    num_of_muls = 0
-    add_opr_range = (0, 5)
-    sub_opr_range = (0, 5)
-    mul_opr_range = (0, 0)
-
-
 class Problem:
 
     def __init__(self, fst_operand, snd_operand, operator):
@@ -87,6 +63,20 @@ class FlashCardsGame:
     def __init__(self, settings):
         self.root = tk.Tk()
         self.configure_window((1200, 325))
+        ProblemController(settings)
+        self.root.mainloop()
+
+    def configure_window(self, window_dims):
+        self.root.title("Arithmetic Flashcards")
+        x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
+        y = (self.root.winfo_screenheight() - window_dims[1]) // 2
+        self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
+
+
+class ProblemController:
+
+    def __init__(self, settings):
+        self.settings = settings
         self.problems = MathProblems(settings)
         self.problem = self.problems.get_prob()
         self.current_frame = ProblemFrame(
@@ -97,102 +87,102 @@ class FlashCardsGame:
         self.current_frame.pack(fill="both", expand=True)
         self.current_frame.entry.bind("<Return>", self.on_entered)
         self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
+        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
         self.failed = False
-
-    def configure_window(self, window_dims):
-        self.root.title("Arithmetic Flashcards")
-        x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
-        y = (self.root.winfo_screenheight() - window_dims[1]) // 2
-        self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
 
     def on_entered(self, _):
         try:
             answer = int(self.current_frame.entry.get())
         except ValueError:
             return
-        if answer == self.problem.answer:
-            if self.problems.remaining <= 0:
-                self.root.destroy()
-                return
-            if not self.failed:
-                self.problems.rem_prob(self.problem)
-            self.current_frame.destroy()
-            self.problem = self.problems.get_prob()
-            self.current_frame = ProblemFrame(
-                self.problem.question_text,
-                self.problems.starting,
-                self.problems.remaining,
-                settings.timer)
-            self.current_frame.pack(fill="both", expand=True)
-            self.current_frame.entry.bind("<Return>", self.on_entered)
-            self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
-            self.failed = False
-        else:
+        if answer != self.problem.answer:
             self.failed = True
-            self.current_frame.freeze_timer = True
+            self.current_frame.timer_setting = None
             self.current_frame.entry.delete(0, 'end')
+            return
+        if not self.failed:
+            self.problems.rem_prob(self.problem)
+        if self.problems.remaining <= 0:
+            self.root.destroy()
+            return
+        self.current_frame.destroy()
+        self.problem = self.problems.get_prob()
+        self.current_frame = ProblemFrame(
+            self.problem.question_text,
+            self.problems.starting,
+            self.problems.remaining,
+            self.settings.timer)
+        self.current_frame.pack(fill="both", expand=True)
+        self.current_frame.entry.bind("<Return>", self.on_entered)
+        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
+        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
+        self.failed = False
+
+    def on_out_of_time(self, _):
+        self.failed = True
 
 
 class ProblemFrame(tk.Frame):
 
     def __init__(self, text, starting, remaining, timer_setting):
         super().__init__()
-        self.freeze_timer = False
-        self.q_comps = []
+        self.timer_setting = timer_setting
+        self.timer_frame, self.timer_bar = self.make_timer_bar()
+        self.progress_frame = self.make_progress_bar(starting, remaining)
+        self.q_comps, self.entry = self.make_question(text)
+        self.update_timer(self.timer_bar)
         self.font_size = None
-        self.progress_frame = None
-        self.timer_frame = None
-        self.entry = None
-        self.make_timer_bar(timer_setting)
-        self.make_progress_bar(starting, remaining)
-        self.make_question(text)
         self.bind("<Configure>", self.resize_elements)
 
     def make_question(self, text):
         question_frame = tk.Frame(self)
         question_frame.pack(side='top', fill='y', expand=True, padx=6, pady=6)
+        q_comps = []
         for t in text:
             comp_frame = tk.Frame(question_frame)
             comp_frame.pack(side='left', anchor='center')
             if t == '_':
-                self.entry = tk.Entry(comp_frame, width=2)
-                self.q_comps.append(self.entry)
-                self.entry.pack(padx=3, pady=3)
-                self.entry.focus_set()
+                entry = tk.Entry(comp_frame, width=2)
+                entry.pack(padx=3, pady=3)
+                q_comps.append(entry)
+                entry.focus_set()
             else:
                 label = tk.Label(comp_frame, text=t)
-                self.q_comps.append(label)
+                q_comps.append(label)
                 label.pack(padx=3, pady=3)
+        return q_comps, entry
 
     def make_progress_bar(self, num_starting_probs, num_remaining_probs):
-        self.progress_frame = ttk.Frame(self, height=30)
-        self.progress_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
+        progress_frame = ttk.Frame(self, height=30)
+        progress_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
         progress_bar = ttk.Progressbar(
-            self.progress_frame,
+            progress_frame,
             maximum=num_starting_probs,
             value=(num_starting_probs - num_remaining_probs))
         progress_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
+        return progress_frame
 
-    def make_timer_bar(self, timer_setting):
-        self.timer_frame = ttk.Frame(self, height=30)
-        self.timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
-        timer_duration = timer_setting or 1
+    def make_timer_bar(self):
+        timer_frame = ttk.Frame(self, height=30)
+        timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
+        timer_duration = self.timer_setting or 1
         timer_bar = ttk.Progressbar(
-            self.timer_frame,
+            timer_frame,
             maximum=timer_duration * 10,
             value=timer_duration * 10)
         timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
-        if timer_setting:
-            self.update_timer_bar(timer_bar)
+        return timer_frame, timer_bar
 
-    def update_timer_bar(self, timer_bar):
+    def update_timer(self, timer_bar):
         if not timer_bar.winfo_exists():
             return
-        elif self.freeze_timer:
+        if not self.timer_setting:
             return
-        else:
-            timer_bar['value'] -= 1
-        self.after(100, lambda: self.update_timer_bar(timer_bar))
+        if timer_bar['value'] <= 0:
+            self.event_generate("<<out_of_time>>")
+            return
+        timer_bar['value'] -= 1
+        self.after(100, lambda: self.update_timer(timer_bar))
 
     def resize_elements(self, _):
         prog_bars_heights = max(25, self.winfo_height() * 0.05)
@@ -205,8 +195,31 @@ class ProblemFrame(tk.Frame):
         self.timer_frame.config(height=prog_bars_heights)
 
 
+class Olive:
+
+    timer = None
+    num_of_probs = None
+    num_of_adds = 30
+    num_of_subs = 30
+    num_of_muls = 40
+    add_opr_range = (0, 8)
+    sub_opr_range = (0, 8)
+    mul_opr_range = (1, 8)
+
+
+class Clem:
+
+    timer = 10
+    num_of_probs = 3
+    num_of_adds = 12
+    num_of_subs = 12
+    num_of_muls = 0
+    add_opr_range = (0, 5)
+    sub_opr_range = (0, 5)
+    mul_opr_range = (0, 0)
+
+
 if __name__ == "__main__":
 
-    settings = Clem()
-    game = FlashCardsGame(settings)
-    game.root.mainloop()
+    user = Clem()
+    game = FlashCardsGame(user)
