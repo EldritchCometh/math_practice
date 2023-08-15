@@ -85,15 +85,16 @@ class ProblemController:
         self.load_new_problem_frame()
 
     def load_new_problem_frame(self):
-        if self.current_frame:
-            self.current_frame.destroy()
         self.failed = False
         self.problem = self.problems.get_prob()
+        if self.current_frame:
+            self.current_frame.destroy()
         self.current_frame = ProblemFrame(
             self.problem.question_text,
             self.problems.starting,
             self.problems.remaining,
             self.user_settings.timer)
+        self.current_frame.on_entered = self.on_entered
         self.current_frame.pack(fill="both", expand=True)
         self.current_frame.entry.bind("<Return>", self.on_entered)
         self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
@@ -121,31 +122,31 @@ class ProblemFrame(tk.Frame):
     def __init__(self, text, starting, remaining, timer_setting):
         super().__init__()
         self.timer_setting = timer_setting
+        self.out_of_time = False
+        self.font_size = None
         self.timer_frame, self.timer_bar = self.make_timer_bar()
         self.progress_frame = self.make_progress_bar(starting, remaining)
-        self.q_comps, self.entry = self.make_question(text)
-        self.out_of_time = False
+        self.question_components, self.entry = self.make_question(text)
         self.update_timer(self.timer_bar)
-        self.font_size = None
         self.bind("<Configure>", self.resize_elements)
 
     def make_question(self, text):
         question_frame = tk.Frame(self)
         question_frame.pack(side='top', fill='y', expand=True, padx=6, pady=6)
-        q_comps = []
+        question_components = []
         for t in text:
             comp_frame = tk.Frame(question_frame)
             comp_frame.pack(side='left', anchor='center')
             if t == '_':
                 entry = tk.Entry(comp_frame, width=2)
                 entry.pack(padx=3, pady=3)
-                q_comps.append(entry)
+                question_components.append(entry)
                 entry.focus_set()
             else:
                 label = tk.Label(comp_frame, text=t)
-                q_comps.append(label)
+                question_components.append(label)
                 label.pack(padx=3, pady=3)
-        return q_comps, entry
+        return question_components, entry
 
     def make_progress_bar(self, num_starting_probs, num_remaining_probs):
         progress_frame = ttk.Frame(self, height=30)
@@ -184,7 +185,7 @@ class ProblemFrame(tk.Frame):
         q_frame_width = self.winfo_width() - 12
         q_frame_height = self.winfo_height() - (prog_bars_heights * 2) - 18
         self.font_size = int(min(q_frame_width * 0.153, q_frame_height * 0.7))
-        for comp in self.q_comps:
+        for comp in self.question_components:
             comp.config(font=("Arial", self.font_size))
         self.progress_frame.config(height=prog_bars_heights)
         self.timer_frame.config(height=prog_bars_heights)
@@ -199,18 +200,18 @@ class Olive:
     num_of_muls = 40
     add_opr_range = (0, 9)
     sub_opr_range = (0, 9)
-    mul_opr_range = (1, 9)
+    mul_opr_range = (1, 12)
 
 
 class Clem:
 
-    timer = 10
-    num_of_probs = 3
+    timer = None
+    num_of_probs = 50
     num_of_adds = None
     num_of_subs = None
     num_of_muls = 0
-    add_opr_range = (0, 5)
-    sub_opr_range = (0, 5)
+    add_opr_range = (0, 6)
+    sub_opr_range = (0, 6)
     mul_opr_range = (0, 0)
 
 
