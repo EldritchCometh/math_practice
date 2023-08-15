@@ -50,12 +50,70 @@ class MathProblems:
     def get_prob(self):
         return random.choice(self.probs)
 
-    def rem_prob(self, problem):
+    def remove(self, problem):
         self.probs.remove(problem)
 
     @property
     def remaining(self):
         return len(self.probs)
+
+
+class FlashCardsGame:
+
+    def __init__(self, user_settings):
+        self.root = tk.Tk()
+        self.configure_window((1200, 325))
+        self.controller = ProblemController(user_settings)
+        self.controller.on_finished = lambda: self.root.destroy()
+        self.root.mainloop()
+
+    def configure_window(self, window_dims):
+        self.root.title("Arithmetic Flashcards")
+        x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
+        y = (self.root.winfo_screenheight() - window_dims[1]) // 2
+        self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
+
+
+class ProblemController:
+
+    def __init__(self, user_settings):
+        self.user_settings = user_settings
+        self.failed = False
+        self.problems = MathProblems(user_settings)
+        self.problem = None
+        self.current_frame = None
+        self.load_new_problem_frame()
+
+    def load_new_problem_frame(self):
+        if self.current_frame:
+            self.current_frame.destroy()
+        self.failed = False
+        self.problem = self.problems.get_prob()
+        self.current_frame = ProblemFrame(
+            self.problem.question_text,
+            self.problems.starting,
+            self.problems.remaining,
+            self.user_settings.timer)
+        self.current_frame.pack(fill="both", expand=True)
+        self.current_frame.entry.bind("<Return>", self.on_entered)
+        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
+
+    def on_entered(self, _):
+        try:
+            answer = int(self.current_frame.entry.get())
+        except ValueError:
+            return
+        if answer == self.problem.answer:
+            if not self.failed and not self.current_frame.out_of_time:
+                self.problems.remove(self.problem)
+            if self.problems.remaining > 0:
+                self.load_new_problem_frame()
+            else:
+                self.on_finished()
+        else:
+            self.failed = True
+            self.current_frame.timer_setting = None
+            self.current_frame.entry.delete(0, 'end')
 
 
 class ProblemFrame(tk.Frame):
@@ -66,6 +124,7 @@ class ProblemFrame(tk.Frame):
         self.timer_frame, self.timer_bar = self.make_timer_bar()
         self.progress_frame = self.make_progress_bar(starting, remaining)
         self.q_comps, self.entry = self.make_question(text)
+        self.out_of_time = False
         self.update_timer(self.timer_bar)
         self.font_size = None
         self.bind("<Configure>", self.resize_elements)
@@ -115,7 +174,7 @@ class ProblemFrame(tk.Frame):
         if not self.timer_setting:
             return
         if timer_bar['value'] <= 0:
-            self.event_generate("<<out_of_time>>")
+            self.out_of_time = True
             return
         timer_bar['value'] -= 1
         self.after(100, lambda: self.update_timer(timer_bar))
@@ -131,70 +190,6 @@ class ProblemFrame(tk.Frame):
         self.timer_frame.config(height=prog_bars_heights)
 
 
-class ProblemController:
-
-    def __init__(self, settings):
-        self.settings = settings
-        self.problems = MathProblems(settings)
-        self.problem = self.problems.get_prob()
-        self.current_frame = ProblemFrame(
-            self.problem.question_text,
-            self.problems.starting,
-            self.problems.remaining,
-            settings.timer)
-        self.current_frame.pack(fill="both", expand=True)
-        self.current_frame.entry.bind("<Return>", self.on_entered)
-        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
-        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
-        self.failed = False
-
-    def on_entered(self, _):
-        try:
-            answer = int(self.current_frame.entry.get())
-        except ValueError:
-            return
-        if answer != self.problem.answer:
-            self.failed = True
-            self.current_frame.timer_setting = None
-            self.current_frame.entry.delete(0, 'end')
-            return
-        if not self.failed:
-            self.problems.rem_prob(self.problem)
-        if self.problems.remaining <= 0:
-            self.root.destroy()
-            return
-        self.current_frame.destroy()
-        self.problem = self.problems.get_prob()
-        self.current_frame = ProblemFrame(
-            self.problem.question_text,
-            self.problems.starting,
-            self.problems.remaining,
-            self.settings.timer)
-        self.current_frame.pack(fill="both", expand=True)
-        self.current_frame.entry.bind("<Return>", self.on_entered)
-        self.current_frame.entry.bind("<KP_Enter>", self.on_entered)
-        self.current_frame.bind("<<out_of_time>>", self.on_out_of_time)
-        self.failed = False
-
-    def on_out_of_time(self, _):
-        self.failed = True
-
-
-class FlashCardsGame:
-
-    def __init__(self, settings):
-        self.root = tk.Tk()
-        self.configure_window((1200, 325))
-        ProblemController(settings)
-        self.root.mainloop()
-
-    def configure_window(self, window_dims):
-        self.root.title("Arithmetic Flashcards")
-        x = (self.root.winfo_screenwidth() - window_dims[0]) // 2
-        y = (self.root.winfo_screenheight() - window_dims[1]) // 2
-        self.root.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
-
-
 class Olive:
 
     timer = None
@@ -202,17 +197,17 @@ class Olive:
     num_of_adds = 30
     num_of_subs = 30
     num_of_muls = 40
-    add_opr_range = (0, 8)
-    sub_opr_range = (0, 8)
-    mul_opr_range = (1, 8)
+    add_opr_range = (0, 9)
+    sub_opr_range = (0, 9)
+    mul_opr_range = (1, 9)
 
 
 class Clem:
 
     timer = 10
     num_of_probs = 3
-    num_of_adds = 12
-    num_of_subs = 12
+    num_of_adds = None
+    num_of_subs = None
     num_of_muls = 0
     add_opr_range = (0, 5)
     sub_opr_range = (0, 5)
