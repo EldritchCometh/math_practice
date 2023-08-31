@@ -1,4 +1,7 @@
-# Fix prog bar display
+
+# figure out why make_question only works with is not none and not with just is
+# Make sure timer bar still works
+# Get rid of timer setting in flashcard
 # Choice of Data Structure
 # Elimate MathProblems class
 # Think about the cascading user_settings
@@ -12,6 +15,9 @@
 # convert running out of time into a signal that just flags failed
 # possible bug: asked the same question twice and gave the answer second time
 # possible bug: required me to press enter twice after getting wrong first time
+# implement difficulty levels
+# implement options and saved users
+
 
 import random
 import tkinter as tk
@@ -33,7 +39,7 @@ class Problem:
     def question(self):
         symbol = {add: '+', sub: '-', mul: '*'}[self.operator]
         comps = [self.fst_operand, self.snd_operand, self.result]
-        comps[self.var_idx] = '_'
+        comps[self.var_idx] = None
         if random.randint(0, 1):
             return [comps[0], symbol, comps[1], '=', comps[2]]
         else:
@@ -47,7 +53,7 @@ class FlashCardsApp(tk.Tk):
         self.configure_window((1200, 325))
         self.main_frame = FlashCardsGame(self)
         self.main_frame.pack(fill="both", expand=True)
-        self.main_frame.on_finished = lambda: self.destroy()
+        self.main_frame.finished = lambda: self.destroy()
         self.mainloop()
 
     def configure_window(self, window_dims):
@@ -66,46 +72,28 @@ class FlashCardsGame(tk.Frame):
         self.remaining = None
         self.current_card = None
         self.deck = self.get_new_deck()
-        self.display_new_flashcard()
+        self.next_flashcard()
 
-    @staticmethod
-    def make_probs(range_min, range_max, opr):
-        probs = []
+    def make_flashcards(self, range_min, range_max, opr):
+        cards = []
         for i in range(range_min, range_max + 1):
             for j in range(range_min, range_max + 1):
                 prob = Problem(i, j, opr)
                 if 0 <= prob.result <= 99:
-                    probs.append(prob)
-        random.shuffle(probs)
-        return probs
+                    cards.append(FlashCard(self, prob))
+        random.shuffle(cards)
+        return cards
 
     def get_new_deck(self):
-        probs = (
-            self.make_probs(*User.add_range, add)[:User.num_of_adds] +
-            self.make_probs(*User.sub_range, sub)[:User.num_of_subs] +
-            self.make_probs(*User.mul_range, mul)[:User.num_of_muls])
-        random.shuffle(probs)
-        probs = probs[:User.num_of_probs]
-        self.starting = len(probs)
+        deck = (
+            self.make_flashcards(*User.add_range, add)[:User.num_of_adds])
+            #self.make_flashcards(*User.sub_range, sub)[:User.num_of_subs] +
+            #self.make_flashcards(*User.mul_range, mul)[:User.num_of_muls])
+        random.shuffle(deck)
+        deck = deck[:User.num_of_probs]
+        self.starting = len(deck)
         self.remaining = self.starting
-        return [FlashCard(self, prob, self.starting) for prob in probs]
-
-    def display_new_flashcard(self):
-        if self.current_card:
-            self.current_card.pack_forget()
-        if self.deck:
-            self.current_card = random.choice(self.deck)
-            self.current_card.prog_bar['maximum'] = self.starting
-            self.current_card.prog_bar['value'] = self.remaining
-            self.current_card.pack(fill="both", expand=True)
-            self.current_card.on_entered = self.on_entered
-            self.current_card.entry.bind("<Return>", self.on_entered)
-            self.current_card.entry.bind("<KP_Enter>", self.on_entered)
-            self.current_card.entry.focus_set()
-            if User.timer:
-                self.current_card.start_countdown()
-        else:
-            self.on_finished()
+        return deck
 
     def on_entered(self, _):
         try:
@@ -114,51 +102,67 @@ class FlashCardsGame(tk.Frame):
             return
         if answer == self.current_card.answer:
             if not self.failed and not self.current_card.out_of_time:
-                print("should be removing here")
                 self.deck.remove(self.current_card)
                 self.remaining -= 1
             self.failed = False
             if self.remaining > 0:
-                self.display_new_flashcard()
+                self.next_flashcard()
             else:
-                self.on_finished()
+                self.finished()
         else:
             self.failed = True
             self.current_card.timer_setting = None
             self.current_card.entry.delete(0, 'end')
 
+    def next_flashcard(self):
+        if self.current_card:
+            self.current_card.pack_forget()
+        if self.deck:
+            self.current_card = random.choice(self.deck)
+            self.current_card.prog_bar['maximum'] = self.starting
+            self.current_card.prog_bar['value'] = self.remaining
+            self.current_card.entry.bind("<Return>", self.on_entered)
+            self.current_card.entry.bind("<KP_Enter>", self.on_entered)
+            self.current_card.entry.focus_set()
+            self.current_card.pack(fill="both", expand=True)
+            if User.timer:
+                self.current_card.start_countdown()
+        else:
+            self.on_finished()
 
-class  FlashCard(tk.Frame):
 
-    def __init__(self, parent, prob, num_of_probs):
+class FlashCard(tk.Frame):
+
+    def __init__(self, parent, prob):
         super().__init__(parent)
+        self.question = prob.question
         self.answer = prob.answer
         self.out_of_time = False
         self.font_size = None
-        self.timer_setting = User().timer
         self.timer_frame, self.timer_bar = self.make_timer_bar()
-        self.prog_frame, self.prog_bar = self.make_prog_bar(num_of_probs)
-        self.question_comps, self.entry = self.make_question(prob.question)
+        self.prog_frame, self.prog_bar = self.make_prog_bar()
+        self.question_comps, self.entry = self.make_question()
         self.bind("<Configure>", self.resize_elements)
 
-    def make_question(self, text):
+    def make_question(self):
         question_frame = tk.Frame(self)
         question_frame.pack(side='top', fill='y', expand=True, padx=6, pady=6)
         question_comps = []
-        for t in text:
+        for c in self.question:
             comp_frame = tk.Frame(question_frame)
             comp_frame.pack(side='left', anchor='center')
-            if t == '_':
+            if c is not None:
+                print(c)
+                label = tk.Label(comp_frame, text=c)
+                question_comps.append(label)
+                label.pack(padx=3, pady=3)
+            else:
                 entry = tk.Entry(comp_frame, width=2)
                 entry.pack(padx=3, pady=3)
                 question_comps.append(entry)
-            else:
-                label = tk.Label(comp_frame, text=t)
-                question_comps.append(label)
-                label.pack(padx=3, pady=3)
         return question_comps, entry
 
-    def make_prog_bar(self, num_of_probs):
+    def make_prog_bar(self):
         prog_frame = ttk.Frame(self, height=30)
         prog_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
         prog_bar = ttk.Progressbar(prog_frame, maximum=1, value=1)
@@ -168,7 +172,7 @@ class  FlashCard(tk.Frame):
     def make_timer_bar(self):
         timer_frame = ttk.Frame(self, height=30)
         timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
-        duration = self.timer_setting or 1
+        duration = User.timer or 1
         timer_bar = ttk.Progressbar(
             timer_frame, maximum=duration * 10, value=duration * 10)
         timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
@@ -209,13 +213,13 @@ class Olive:
 class Clem:
 
     timer = None
-    num_of_probs = 3
-    num_of_adds = None
-    num_of_subs = None
+    num_of_probs = 1
+    num_of_adds = 1
+    num_of_subs = 0
     num_of_muls = 0
-    add_range = (0, 9)
-    sub_range = (0, 9)
-    mul_range = (0, 0)
+    add_range = (5, 5)
+    sub_range = (5, 5)
+    mul_range = (5, 5)
 
 
 if __name__ == "__main__":
