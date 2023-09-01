@@ -1,4 +1,5 @@
 
+# need to make my own layout system to stop components from jumping around
 # make sure elements have the right size before flash_card is drawn
 # clean up chatgpts helpful mess
 # probems sometimes have their order switched on reappearence
@@ -57,6 +58,7 @@ class FlashCardsGame(tk.Frame):
         self.failed = False
         self.starting = None
         self.remaining = None
+        self.problem = None
         self.current_card = None
         self.problems = self.get_problem_set()
         self.next_flashcard()
@@ -87,25 +89,23 @@ class FlashCardsGame(tk.Frame):
         if self.current_card:
             self.current_card.pack_forget()
             self.current_card.destroy()
-        prob = random.choice(self.problems)
-        prog_value = self.starting - self.remaining
-        self.current_card = FlashCard(self, prob, self.starting, prog_value)
-        self.current_card.entry.bind("<Return>", self.on_entered)
-        self.current_card.entry.bind("<KP_Enter>", self.on_entered)
+        self.problem = random.choice(self.problems)
+        self.current_card = FlashCard(
+            parent=self,
+            question=self.problem.question,
+            prog_bar_values=(self.starting, self.starting - self.remaining),
+            on_entered=self.on_entered,
+            on_timeup=lambda: setattr(self, 'failed', True))
         self.current_card.pack(fill="both", expand=True)
-
-    def on_failed(self):
-        self.failed = True
-        self.current_card.on_failed()
 
     def on_entered(self, event):
         try:
             answer = int(event.widget.get())
         except ValueError:
             return
-        if answer == self.current_card.problem.answer:
+        if answer == self.problem.answer:
             if not self.failed:
-                self.problems.remove(self.current_card.problem)
+                self.problems.remove(self.problem)
                 self.remaining = len(self.problems)
             self.failed = False
             if self.remaining > 0:
@@ -113,27 +113,28 @@ class FlashCardsGame(tk.Frame):
             else:
                 self.finished()
         else:
-            self.on_failed()
+            self.failed = True
+            self.current_card.on_failed()
 
 
 class FlashCard(tk.Frame):
 
-    def __init__(self, parent, prob, prog_max, prog_value):
+    def __init__(self, parent, question, prog_bar_values, on_entered, on_timeup):
         super().__init__(parent)
-        self.problem = prob
         self.timer = User.timer
-        self.font_size = None
         self.timer_frame, self.timer_bar = self.make_timer_bar()
-        self.prog_frame = self.make_prog_bar(prog_max, prog_value)
-        self.question_comps, self.entry = self.make_question()
+        self.prog_frame = self.make_prog_bar(*prog_bar_values)
+        self.question_comps, self.entry = self.make_question(question)
         self.bind("<Configure>", self.resize_elements)
-        self.start_timer()
+        self.entry.bind("<Return>", on_entered)
+        self.entry.bind("<KP_Enter>", on_entered)
+        self.start_timer(on_timeup)
 
-    def make_question(self):
+    def make_question(self, question):
         question_frame = tk.Frame(self)
-        question_frame.pack(side='top', fill='y', expand=True, padx=6, pady=6)
         question_comps = []
-        for c in self.problem.question:
+        question_frame.pack(side='top', fill='y', expand=True, padx=6, pady=6)
+        for c in question:
             comp_frame = tk.Frame(question_frame)
             comp_frame.pack(side='left', anchor='center')
             if c is not None:
@@ -167,19 +168,19 @@ class FlashCard(tk.Frame):
         prog_bars_heights = max(25, self.winfo_height() * 0.05)
         q_frame_width = self.winfo_width() - 12
         q_frame_height = self.winfo_height() - (prog_bars_heights * 2) - 18
-        self.font_size = int(min(q_frame_width * 0.153, q_frame_height * 0.7))
+        font_size = int(min(q_frame_width * 0.153, q_frame_height * 0.7))
         for comp in self.question_comps:
-            comp.config(font=("Arial", self.font_size))
+            comp.config(font=("Arial", font_size))
         self.prog_frame.config(height=prog_bars_heights)
         self.timer_frame.config(height=prog_bars_heights)
 
-    def start_timer(self):
+    def start_timer(self, on_timeup):
         if self.timer_bar['value'] <= 0:
-            self.master.event_generate("<<TimeUp>>", when='tail')
+            on_timeup()
             self.timer = False
         if self.timer:
             self.timer_bar['value'] -= 1
-            self.after(100, lambda: self.start_timer())
+            self.after(100, lambda: self.start_timer(on_timeup))
 
     def on_failed(self):
         self.timer = False
@@ -200,8 +201,8 @@ class Olive:
 
 class Clem:
 
-    timer = 10
-    num_of_probs = 3
+    timer = 99
+    num_of_probs = None
     num_of_adds = None
     num_of_subs = None
     num_of_muls = 0
