@@ -133,7 +133,7 @@ class FlashCard(tk.Frame):
     def make_question(self, question):
         question_frame = tk.Frame(self)
         question_comps = []
-        question_frame.pack(side='top', fill='y', expand=True, padx=6, pady=6)
+        question_frame.pack(side='top', fill='y', expand=True)
         for c in question:
             comp_frame = tk.Frame(question_frame)
             comp_frame.pack(side='left', anchor='center')
@@ -169,6 +169,7 @@ class FlashCard(tk.Frame):
         q_frame_width = self.winfo_width() - 12
         q_frame_height = self.winfo_height() - (prog_bars_heights * 2) - 18
         font_size = int(min(q_frame_width * 0.153, q_frame_height * 0.7))
+        print(font_size)
         for comp in self.question_comps:
             comp.config(font=("Arial", font_size))
         self.prog_frame.config(height=prog_bars_heights)
