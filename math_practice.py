@@ -1,13 +1,4 @@
 
-# move frame creation into its own method
-# need to make my own layout system to stop components from jumping around
-# make sure elements have the right size before flash_card is drawn
-# clean up chatgpts helpful mess
-# probems sometimes have their order switched on reappearence
-# implement difficulty levels
-# implement options and saved users
-
-
 import random
 import tkinter as tk
 from tkinter import ttk
@@ -122,9 +113,14 @@ class FlashCard(tk.Frame):
 
     def __init__(self, parent, q_text, prog_bar_values, on_entered, on_timeup):
         super().__init__(parent)
-        self.q_text, self.prog_bar_values = q_text, prog_bar_values
-        self.timer, self.entry, self.timer_bar = User.timer, None, None
-        self.timer_frame, self.prog_frame, self.question_frame = None, None, None
+        self.q_text = q_text
+        self.prog_bar_values = prog_bar_values
+        self.timer = User.timer
+        self.entry = None
+        self.timer_bar = None
+        self.timer_frame = None
+        self.prog_frame = None
+        self.question_frame = None
         self.make_layout()
         self.start_timer(on_timeup)
         self.bind("<Configure>", self.resize_elements)
@@ -132,14 +128,14 @@ class FlashCard(tk.Frame):
         self.entry.bind("<KP_Enter>", on_entered)
 
     def make_layout(self):
-        self.timer_frame = self.make_timer_frame(height=30)
-        self.prog_frame = self.make_prog_frame(height=30)
-        self.question_frame = self.make_question_frame()
+        self.timer_frame = self.make_timer_bar(height=30)
+        self.prog_frame = self.make_prog_bar(height=30)
+        self.question_frame = self.make_question()
         self.timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
         self.prog_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
         self.question_frame.pack(side='top', fill='y', expand=True)
 
-    def make_timer_frame(self, height):
+    def make_timer_bar(self, height):
         timer_frame = ttk.Frame(self, height=height)
         try:
             duration = self.timer * 10
@@ -150,14 +146,14 @@ class FlashCard(tk.Frame):
         self.timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
         return timer_frame
 
-    def make_prog_frame(self, height):
+    def make_prog_bar(self, height):
         prog_frame = ttk.Frame(self, height=height)
         maximum, value = self.prog_bar_values
         prog_bar = ttk.Progressbar(prog_frame, maximum=maximum, value=value)
         prog_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
         return prog_frame
 
-    def make_question_frame(self):
+    def make_question(self):
         question_frame = tk.Frame(self)
         for c in self.q_text:
             comp_frame = tk.Frame(question_frame)
@@ -223,35 +219,3 @@ if __name__ == "__main__":
 
     User = Clem
     FlashCardsApp()
-
-
-'''
-class User:
-
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(User, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
-
-    def set_clem(self):
-        self.timer = None
-        self.num_of_probs = 40
-        self.num_of_adds = None
-        self.num_of_subs = None
-        self.num_of_muls = 0
-        self.add_opr_range = (0, 9)
-        self.sub_opr_range = (0, 9)
-        self.mul_opr_range = (0, 0)
-
-    def set_olive(self):
-        self.timer = None
-        self.num_of_probs = None
-        self.num_of_adds = 30
-        self.num_of_subs = 30
-        self.num_of_muls = 40
-        self.add_opr_range = (2, 19)
-        self.sub_opr_range = (2, 19)
-        self.mul_opr_range = (1, 12)
-'''
