@@ -1,4 +1,5 @@
 
+# move frame creation into its own method
 # need to make my own layout system to stop components from jumping around
 # make sure elements have the right size before flash_card is drawn
 # clean up chatgpts helpful mess
@@ -92,7 +93,7 @@ class FlashCardsGame(tk.Frame):
         self.problem = random.choice(self.problems)
         self.current_card = FlashCard(
             parent=self,
-            question=self.problem.question,
+            q_text=self.problem.question,
             prog_bar_values=(self.starting, self.starting - self.remaining),
             on_entered=self.on_entered,
             on_timeup=lambda: setattr(self, 'failed', True))
@@ -119,59 +120,65 @@ class FlashCardsGame(tk.Frame):
 
 class FlashCard(tk.Frame):
 
-    def __init__(self, parent, question, prog_bar_values, on_entered, on_timeup):
+    def __init__(self, parent, q_text, prog_bar_values, on_entered, on_timeup):
         super().__init__(parent)
-        self.timer = User.timer
-        self.timer_frame, self.timer_bar = self.make_timer_bar()
-        self.prog_frame = self.make_prog_bar(*prog_bar_values)
-        self.question_comps, self.entry = self.make_question(question)
+        self.q_text, self.prog_bar_values = q_text, prog_bar_values
+        self.timer, self.entry, self.timer_bar = User.timer, None, None
+        self.timer_frame, self.prog_frame, self.question_frame = None, None, None
+        self.make_layout()
+        self.start_timer(on_timeup)
         self.bind("<Configure>", self.resize_elements)
         self.entry.bind("<Return>", on_entered)
         self.entry.bind("<KP_Enter>", on_entered)
-        self.start_timer(on_timeup)
 
-    def make_question(self, question):
-        question_frame = tk.Frame(self)
-        question_comps = []
-        question_frame.pack(side='top', fill='y', expand=True)
-        for c in question:
-            comp_frame = tk.Frame(question_frame)
-            comp_frame.pack(side='left', anchor='center')
-            if c is not None:
-                label = tk.Label(comp_frame, text=c)
-                question_comps.append(label)
-                label.pack(padx=3, pady=3)
-            else:
-                entry = tk.Entry(comp_frame, width=2)
-                entry.pack(padx=3, pady=3)
-                question_comps.append(entry)
-        entry.focus_set()
-        return question_comps, entry
+    def make_layout(self):
+        self.timer_frame = self.make_timer_frame(height=30)
+        self.prog_frame = self.make_prog_frame(height=30)
+        self.question_frame = self.make_question_frame()
+        self.timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
+        self.prog_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
+        self.question_frame.pack(side='top', fill='y', expand=True)
 
-    def make_prog_bar(self, maximum, value):
-        prog_frame = ttk.Frame(self, height=30)
-        prog_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
+    def make_timer_frame(self, height):
+        timer_frame = ttk.Frame(self, height=height)
+        try:
+            duration = self.timer * 10
+        except TypeError:
+            duration = 1
+        self.timer_bar = ttk.Progressbar(
+            timer_frame, maximum=duration, value=duration * 10)
+        self.timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
+        return timer_frame
+
+    def make_prog_frame(self, height):
+        prog_frame = ttk.Frame(self, height=height)
+        maximum, value = self.prog_bar_values
         prog_bar = ttk.Progressbar(prog_frame, maximum=maximum, value=value)
         prog_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
         return prog_frame
 
-    def make_timer_bar(self):
-        timer_frame = ttk.Frame(self, height=30)
-        timer_frame.pack(side='bottom', fill='x', padx=5, pady=(0, 4))
-        duration = User.timer or 1
-        timer_bar = ttk.Progressbar(
-            timer_frame, maximum=duration * 10, value=duration * 10)
-        timer_bar.place(relx=0, rely=0, relwidth=1, relheight=1)
-        return timer_frame, timer_bar
+    def make_question_frame(self):
+        question_frame = tk.Frame(self)
+        for c in self.q_text:
+            comp_frame = tk.Frame(question_frame)
+            comp_frame.pack(side='left', anchor='center')
+            if c is not None:
+                label = tk.Label(comp_frame, text=c)
+                label.pack(padx=3, pady=3)
+            else:
+                self.entry = tk.Entry(comp_frame, width=2)
+                self.entry.pack(padx=3, pady=3)
+        self.entry.focus_set()
+        return question_frame
 
     def resize_elements(self, _):
         prog_bars_heights = max(25, self.winfo_height() * 0.05)
         q_frame_width = self.winfo_width() - 12
         q_frame_height = self.winfo_height() - (prog_bars_heights * 2) - 18
         font_size = int(min(q_frame_width * 0.153, q_frame_height * 0.7))
-        print(font_size)
-        for comp in self.question_comps:
-            comp.config(font=("Arial", font_size))
+        for comp_frame in self.question_frame.winfo_children():
+            for widget in comp_frame.winfo_children():
+                widget.config(font=("Arial", font_size))
         self.prog_frame.config(height=prog_bars_heights)
         self.timer_frame.config(height=prog_bars_heights)
 
@@ -202,14 +209,14 @@ class Olive:
 
 class Clem:
 
-    timer = 99
+    timer = None
     num_of_probs = None
-    num_of_adds = None
-    num_of_subs = None
-    num_of_muls = 0
-    add_range = (0, 3)
-    sub_range = (0, 3)
-    mul_range = (0, 12)
+    num_of_adds = 17
+    num_of_subs = 17
+    num_of_muls = 5
+    add_range = (0, 9)
+    sub_range = (0, 9)
+    mul_range = (1, 2)
 
 
 if __name__ == "__main__":
