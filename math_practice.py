@@ -5,27 +5,6 @@ from tkinter import ttk
 from operator import add, sub, mul
 
 
-class Problem:
-
-    def __init__(self, fst_operand, snd_operand, operator):
-        self.fst_operand = fst_operand
-        self.snd_operand = snd_operand
-        self.operator = operator
-        self.result = operator(fst_operand, snd_operand)
-        self.var_idx = random.randint(0, 2)
-        self.answer = [fst_operand, snd_operand, self.result][self.var_idx]
-
-    @property
-    def question(self):
-        symbol = {add: '+', sub: '-', mul: '*'}[self.operator]
-        comps = [self.fst_operand, self.snd_operand, self.result]
-        comps[self.var_idx] = None
-        if random.randint(0, 1):
-            return [comps[0], symbol, comps[1], '=', comps[2]]
-        else:
-            return [comps[2], '=', comps[0], symbol, comps[1]]
-
-
 class FlashCardsApp(tk.Tk):
 
     def __init__(self):
@@ -54,28 +33,6 @@ class FlashCardsGame(tk.Frame):
         self.current_card = None
         self.problems = self.get_problem_set()
         self.next_flashcard()
-
-    @staticmethod
-    def generate_problems(range_min, range_max, opr):
-        probs = []
-        for i in range(range_min, range_max + 1):
-            for j in range(range_min, range_max + 1):
-                prob = Problem(i, j, opr)
-                if 0 <= prob.result <= 99:
-                    probs.append(prob)
-        random.shuffle(probs)
-        return probs
-
-    def get_problem_set(self):
-        prob_set = (
-            self.generate_problems(*User.add_range, add)[:User.num_of_adds] +
-            self.generate_problems(*User.sub_range, sub)[:User.num_of_subs] +
-            self.generate_problems(*User.mul_range, mul)[:User.num_of_muls])
-        random.shuffle(prob_set)
-        prob_set = prob_set[:User.num_of_probs]
-        self.starting = len(prob_set)
-        self.remaining = self.starting
-        return prob_set
 
     def next_flashcard(self):
         if self.current_card:
