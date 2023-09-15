@@ -1,50 +1,68 @@
 
-# combine some of the levels so that the num of probs are more consistent
+# I need a function that returns the total pool of valid questions for each
+# operation for each level of difficulty. Then at run time the software will
+# grab 3 random questions of each operation type.
 
-from operator import add, sub, mul
 import random
+from operator import add, sub, mul
 
 
-def gen_probs(range_min, operators, range_max, mixing, num_of_probs=8):
-    if isinstance(operators, int):
-        operators = [operators]
-    probs = []
-    while len(probs) < num_of_probs:
-        temp = []
-        for operator in operators:
-            encoded_opr = {0: add, 1: sub, 2: mul}[operator]
-            for i in range(range_min, range_max + 1):
-                for j in range(range_min, range_max + 1):
-                    answer = encoded_opr(i, j)
-                    if 0 <= answer <= 99:
-                        temp.append((i, operator, j, answer, mixing))
-        random.shuffle(temp)
-        temp = temp[:num_of_probs-len(probs)]
-        probs.extend(temp)
-    random.shuffle(probs)
-    return probs
+class Problem:
+
+    def __init__(self, operands, operator, rand_order, mixed_unknown):
+        symbol = {add: '+', sub: '-', mul: '*'}[operator]
+        result = operator(operands[0], operands[1])
+        self.question = [operands[0], symbol, operands[1], '=', result]
+        self.unknown_idx = 4
+        self.unknown = self.question[4]
+        if rand_order: self.rand_reorder()
+        if mixed_unknown: self.mix_unknown()
+        self.question[self.unknown_idx] = None
+
+    def rand_reorder(self):
+        if random.choice([True, False]):
+            return
+        self.question = [self.question[4], '='] + self.question[0:2]
+        self.unknown_idx = 0
+
+    def mix_unknown(self):
+        self.unknown_idx = random.choice([0, 2, 4])
+        self.unknown = self.question[self.unknown_idx]
+
+
+def gen_probs(operand_range, mixed_unknown, rand_order, answer_range=(0, 99)):
+    all_probs = []
+    operations = [add, sub]
+    if operand_range[1] >= 10:
+        operations += mul
+    for opr in operations:
+        probs = []
+        while len(probs) < 3:
+            probs.extend(
+                Problem((i, j), opr, rand_order, mixed_unknown)
+                for i in range(operand_range[0], operand_range[1] + 1)
+                for j in range(operand_range[0], operand_range[1] + 1)
+                if answer_range[0] <= opr(i, j) <= answer_range[1])
+        random.shuffle(probs)
+        all_probs.extend(probs[:3])
+    random.shuffle(all_probs)
+    return all_probs
 
 
 def get_level(level):
-    return [
-        gen_probs(0, [0, 1], 0, 0, 4),  # up to 0 with mixed operator
-        gen_probs(0,      0, 1, 0, 4),  # up to 1 with addition
-        gen_probs(0,      1, 1, 0, 4),  # up to 1 with sutraction
-        gen_probs(0, [0, 1], 1, 0, 4),  # up to 1 with mixed operator
-        gen_probs(0,      0, 1, 1, 4),  # up to 1 with addition and reversed
-        gen_probs(0,      1, 1, 1, 4),  # up to 1 with subtraction and reversed
-        gen_probs(0, [0, 1], 1, 1, 4),  # up to 1 with mixed opearator and reversed
-        gen_probs(0,      0, 2, 0, 6),  # up to 2 with addition
-        gen_probs(0,      1, 2, 0, 6),  # up to 2 with subtraction
-        gen_probs(0,      0, 1, 2, 6),  # introduce random blanks up to 1+1
-        gen_probs(0,      1, 1, 2, 6),  # random blanks up to 1-1
-        gen_probs(0,      0, 2, 2, 6),  # random blanks up to 2+2
-        gen_probs(0,      1, 2, 2, 6),  # random blanks up to 2-2
+    levels = [
+        ((0, 0), 0, 0),
+        ((0, 0), 0, 1),
+        ((0, 0), 1, 0),
+        ((0, 0), 1, 1),
+        ((0, 1), 0, 0),
+        ((0, 1), 0, 1),
+        ((0, 1), 1, 0),
+        ((0, 1), 1, 1),
+        ((0, 0), 1, 1),
+    ]
+    return gen_probs(*levels[level])
 
 
-
-    ][level]
-
-
-for i in range(1):
-    print(get_level(i))
+for question in get_level(0):
+    print(question.question, question.unknown)
