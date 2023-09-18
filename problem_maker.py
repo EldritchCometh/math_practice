@@ -4,6 +4,7 @@
 # grab 3 random questions of each operation type.
 
 import random
+from itertools import product
 from operator import add, sub, mul
 
 
@@ -22,7 +23,7 @@ class Problem:
     def rand_reorder(self):
         if random.choice([True, False]):
             return
-        self.question = [self.question[4], '='] + self.question[0:2]
+        self.question = [self.question[4], '='] + self.question[:3]
         self.unknown_idx = 0
 
     def mix_unknown(self):
@@ -50,19 +51,18 @@ def gen_probs(operand_range, mixed_unknown, rand_order, answer_range=(0, 99)):
 
 
 def get_level(level):
-    levels = [
-        ((0, 0), 0, 0),
-        ((0, 0), 0, 1),
-        ((0, 0), 1, 0),
-        ((0, 0), 1, 1),
-        ((0, 1), 0, 0),
-        ((0, 1), 0, 1),
-        ((0, 1), 1, 0),
-        ((0, 1), 1, 1),
-        ((0, 0), 1, 1),
-    ]
+    levels = []
+    for i in range(3):
+        for j in range(2):
+            for k in range(2):
+                levels.append(((0, i), j, k))
     return gen_probs(*levels[level])
 
 
-for question in get_level(0):
-    print(question.question, question.unknown)
+levels = (
+    [((0, i), j, k) for i, j, k in product(range(3), range(2), range(2))] +
+    [((0, i), j, j) for i, j in product(range(3, 6), range(2))] +
+    [((0, i), 1, 1) for i in range(7, 12, 2)] +
+    [((j, i), 1, 1, (j, 99)) for i, j in zip(range(13, 20, 2), range(4))] +
+    [((3, i), 1, 1, (3, 99)) for i in range(24, 100, 5)])
+
