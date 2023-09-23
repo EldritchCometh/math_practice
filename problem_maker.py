@@ -1,8 +1,4 @@
 
-# I need a function that returns the total pool of valid questions for each
-# operation for each level of difficulty. Then at run time the software will
-# grab 3 random questions of each operation type.
-
 import random
 from itertools import product
 from operator import add, sub, mul
@@ -35,7 +31,7 @@ def gen_probs(operand_range, mixed_unknown, rand_order, answer_range=(0, 99)):
     all_probs = []
     operations = [add, sub]
     if operand_range[1] >= 10:
-        operations += mul
+        operations.append(mul)
     for opr in operations:
         probs = []
         while len(probs) < 3:
@@ -51,18 +47,12 @@ def gen_probs(operand_range, mixed_unknown, rand_order, answer_range=(0, 99)):
 
 
 def get_level(level):
-    levels = []
-    for i in range(3):
-        for j in range(2):
-            for k in range(2):
-                levels.append(((0, i), j, k))
+    levels = (
+        [((0, i), j, k) for i, j, k in product(range(3), range(2), range(2))] +
+        [((0, i), j, j) for i, j in product(range(3, 6), range(2))] +
+        [((0, i), 1, 1) for i in range(7, 12, 2)] +
+        [((j, i), 1, 1, (j, 99)) for j, i in enumerate(range(13, 20, 2))] +
+        [((3, i), 1, 1, (3, 99)) for i in range(24, 100, 5)])
     return gen_probs(*levels[level])
 
-
-levels = (
-    [((0, i), j, k) for i, j, k in product(range(3), range(2), range(2))] +
-    [((0, i), j, j) for i, j in product(range(3, 6), range(2))] +
-    [((0, i), 1, 1) for i in range(7, 12, 2)] +
-    [((j, i), 1, 1, (j, 99)) for i, j in zip(range(13, 20, 2), range(4))] +
-    [((3, i), 1, 1, (3, 99)) for i in range(24, 100, 5)])
 

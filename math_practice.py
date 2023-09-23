@@ -2,7 +2,7 @@
 import random
 import tkinter as tk
 from tkinter import ttk
-from operator import add, sub, mul
+from problem_maker import get_level
 
 
 class FlashCardsApp(tk.Tk):
@@ -20,6 +20,16 @@ class FlashCardsApp(tk.Tk):
         x = (self.winfo_screenwidth() - window_dims[0]) // 2
         y = (self.winfo_screenheight() - window_dims[1]) // 2
         self.geometry(f"{window_dims[0]}x{window_dims[1]}+{x}+{y}")
+
+
+class StartScreen(tk.Frame):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.make_start_screen()
+
+    def make_start_screen(self):
+
 
 
 class FlashCardsGame(tk.Frame):
